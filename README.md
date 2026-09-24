@@ -1,78 +1,252 @@
-# Aplikasi Penerimaan Siswa Baru (PPDB) Online - GAS & GitHub Web
+# 📋 Rapor Digital - Sistem Informasi Rapor Madrasah
 
-Aplikasi Penerimaan Peserta Didik Baru (PPDB) berbasis **Google Apps Script (GAS)** dan **Google Sheets Database** dengan antarmuka modern bertema **Hijau Tosca & Putih Glassmorphism**, dilengkapi dengan animasi **Orbit Dot Logo**, efek **Pulse**, layout **Side View (Desktop & Mobile)**, serta sistem **Pembatasan Kuota Otomatis** untuk Tahun Pelajaran **2027/2028** dan **2028/2029**.
+Aplikasi web untuk mengelola data rapor siswa madrasah dengan sistem berbasis **Rombongan Belajar (Rombel)**.
 
----
+## ✨ Fitur Utama
 
-## 🌟 Fitur Utama
-1. **Tema & Desain Visual Premium**:
-   - Tema warna Hijau Tosca (`#00A896`, `#028090`) & Putih dengan efek *Glassmorphism Transparan Melayang* (`backdrop-filter blur`).
-   - Animasi **Orbit Dot Logo** (titik mengorbit berputar melingkari logo sekolah).
-   - Animasi **Pulse Glow** pada background, badge kuota, dan tombol pendaftaran keren (*cool glowing button*).
-   - Animasi **Loading Modal Orbit Dot** saat memproses kiriman data.
-2. **Layout Responsif (Side View & Mobile View)**:
-   - **Desktop Side View**: Left Sidebar (Logo, Judul, Switcher Tahun Pelajaran, Cards Info Kuota) & Main Content (Formulir Data Siswa & Data Keluarga).
-   - **Mobile View**: Drawer responsif yang nyaman digunakan di smartphone.
-3. **Formulir Pendaftaran Lengkap**:
-   - **SUB "DATA SISWA"**:
-     - Nama (catatan: *"Nama Sesuai Akte Kelahiran"*)
-     - Jenis Kelamin (pilihan pill L & P)
-     - Tempat Lahir (catatan: *"Kota Kelahiran Sesuai Akte"*)
-     - Tanggal Lahir (date picker)
-     - Asal KB/TK/RA Sebelumnya
-     - NIK Siswa (catatan: *"NIK Sesuai Akte/KK"*, filter 16 angka)
-     - Nomor WhatsApp yang aktif (catatan: *"hanya angka"*)
-   - **SUB "DATA KELUARGA"**:
-     - Nomor KK
-     - Nama Ayah
-     - NIK Ayah
-     - Nama Ibu
-     - NIK Ibu
-4. **Validasi Merah & Notifikasi**:
-   - Peringatan instan warna **Merah** (`notice Merah apabila ada yang belum diisi`) dan highlight input merah jika ada kolom wajib yang kosong.
-5. **Sistem Penguncian Kuota Otomatis**:
-   - Batas kuota maksimal default **112** (bisa di-setting di spreadsheet).
-   - Pilihan Tahun Pelajaran **2027/2028** dan **2028/2029**.
-   - Indikator Live Kuota (Total Kuota, Terisi, Sisa Kuota).
-   - Tombol **"KIRIM PENDAFTARAN"** otomatis terkunci (disabled) ketika kuota penuh.
-6. **Otomatisasi Database Spreadsheet**:
-   - Script `setupDatabase()` membuat dan memformat tab **`DATA_PENDAFTARAN`**, **`SETTINGS`**, dan **`KUOTA`** secara otomatis lengkap dengan formula & sampel data.
-7. **Bukti Pendaftaran & Integrasi WhatsApp**:
-   - Menampilkan modal Bukti Pendaftaran (*Receipt Card*) dengan Nomor Pendaftaran unik (contoh: `REG-2027-001`) dan tombol konfirmasi otomatis ke WhatsApp Admin.
+- 🏫 **Manajemen Rombel** - Kelola rombongan belajar dengan daftar mata pelajaran
+- 👥 **Multi-User & Role** - Admin, Wali Kelas, dan Guru Mapel
+- 👤 **Data Siswa** - Input data siswa per rombel
+- 📊 **Rekap Nilai** - Input dan kelola nilai siswa
+- 🏆 **Ekstrakurikuler** - Catat kegiatan ekskul siswa
+- 📌 **KKM** - Atur Kriteria Ketuntasan Minimal per mata pelajaran
+- 🖨️ **Cetak Rapor** - Generate rapor dalam format A4 siap cetak
+- 📤 **Upload Excel** - Import data siswa dan nilai dari file Excel
+- 🔐 **Autentikasi** - Login dengan username dan password
 
----
+## 🏗️ Arsitektur Sistem
 
-## 🛠️ Cara Penggunaan & Deployment
+### Frontend
+- **HTML5** + **CSS3** + **Vanilla JavaScript**
+- **SheetJS (xlsx)** - Untuk baca/tulis file Excel
+- Responsive design untuk desktop dan tablet
 
-### Langkah 1: Inisialisasi Database Spreadsheet Otomatis
-1. Buka [Google Sheets](https://sheets.google.com) baru.
-2. Klik menu **Ekstensi** > **Apps Script**.
-3. Hapus kode bawaan, lalu salin isi file [`Code.gs`](file:///d:/appscript%20github%20%28xampp%29/indenppdb/Code.gs) ke editor Apps Script.
-4. Salin isi file [`index.html`](file:///d:/appscript%20github%20%28xampp%29/indenppdb/index.html) (Buat file HTML baru bernama `index` di Apps Script).
-5. Pada dropdown fungsi di bagian atas editor Apps Script, pilih fungsi **`setupDatabase`**, lalu klik tombol **▶ Jalankan (Run)**.
-6. Berikan izin otorisasi (*Grant Permissions*).
-7. Kembali ke Google Sheets Anda. Tab **`DATA_PENDAFTARAN`**, **`SETTINGS`**, dan **`KUOTA`** akan otomatis terbuat lengkap dengan warna header tosca, formula, dan data sampel!
+### Backend
+- **Google Apps Script** - Serverless backend
+- **Google Sheets** - Database
+- RESTful API dengan autentikasi token
 
-### Langkah 2: Deploy Web App Google Apps Script
-1. Di editor Apps Script, klik tombol **Terapkan (Deploy)** > **Pengembangan Baru (New Deployment)**.
-2. Klik ikon ⚙️ (*Select type*) dan pilih **Aplikasi Web (Web App)**.
-3. Isikan data berikut:
-   - **Deskripsi**: PPDB Web App V1
-   - **Jalankan sebagai (Execute as)**: *Saya (Me / Email Anda)*
-   - **Yang memiliki akses (Who has access)**: *Siapa saja (Anyone)*
-4. Klik **Deploy**.
-5. Salin **URL Aplikasi Web** (*Web App URL*) yang dihasilkan.
+## 📊 Struktur Data
 
-### Langkah 3: Deploy di GitHub Pages (Opsional)
-Jika Anda ingin memasang web ini di **GitHub Pages** atau Hosting Web Mandiri:
-1. Upload file `index.html` ke repositori GitHub Anda.
-2. Aktifkan **GitHub Pages** di tab Settings repositori.
-3. Buka halaman web GitHub Pages Anda.
-4. Klik tombol ⚙️ **Setup API URL** di sudut kanan bawah web, lalu tempelkan **URL Web App GAS** yang Anda salin pada Langkah 2.
+### Rombel (Rombongan Belajar)
+Rombel adalah unit organisasi utama yang berisi:
+- ID dan nama rombel
+- Wali kelas yang ditugaskan
+- Daftar mata pelajaran
 
----
+### User Roles
+1. **Admin** - Akses penuh ke semua fitur
+2. **Wali Kelas** - Kelola 1 rombel yang ditugaskan
+3. **Guru Mapel** - Kelola nilai di beberapa rombel
+
+### Data Per Rombel
+- Data Siswa (NISN, nama, tempat/tanggal lahir, dll)
+- Nilai mata pelajaran
+- KKM per mata pelajaran
+- Ekstrakurikuler
+- Kehadiran (sakit, ijin, alpa)
+
+## 🚀 Cara Setup
+
+### 1. Setup Backend (Google Apps Script)
+
+1. Buat Google Spreadsheet baru
+2. Buka **Extensions → Apps Script**
+3. Hapus kode default, copy-paste kode dari `gas/Code.gs`
+4. Save (Ctrl+S)
+5. Jalankan fungsi `setupSheets()` **SEKALI**
+6. **Deploy → New Deployment → Web App**
+   - Execute as: **Me**
+   - Who has access: **Anyone**
+7. Copy URL Web App
+
+### 2. Setup Frontend
+
+1. Clone repository ini
+2. Buka file `js/api.js`
+3. Paste URL Web App ke konstanta `GAS_URL`:
+   ```javascript
+   const GAS_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+   ```
+4. Commit dan push ke GitHub
+5. Deploy ke GitHub Pages atau hosting lainnya
+
+### 3. Login Pertama Kali
+
+- **Username:** `admin`
+- **Password:** `admin123`
+
+⚠️ **PENTING:** Segera ganti password admin setelah login pertama!
+
+## 📖 Panduan Penggunaan
+
+### Untuk Admin
+
+1. **Kelola Rombel**
+   - Buat rombel baru (contoh: "Kelas 1", "Kelas 2")
+   - Tentukan daftar mata pelajaran untuk setiap rombel
+   - Assign wali kelas ke rombel
+
+2. **Kelola User**
+   - Buat user baru (Wali Kelas atau Guru Mapel)
+   - Assign rombel ke guru mapel (bisa lebih dari 1)
+
+3. **Setting Global**
+   - Atur nama madrasah, kepala madrasah
+   - Atur semester dan tahun pelajaran
+   - Upload logo/KOP rapor
+
+### Untuk Wali Kelas
+
+1. **Data Siswa**
+   - Input data siswa satu per satu
+   - Atau upload dari file Excel (download template terlebih dahulu)
+
+2. **Input Nilai**
+   - Isi nilai untuk setiap mata pelajaran
+   - Isi kehadiran (sakit, ijin, alpa)
+
+3. **Ekstrakurikuler**
+   - Tambah kegiatan ekskul
+   - Beri nilai untuk setiap siswa
+
+4. **KKM**
+   - Atur KKM untuk setiap mata pelajaran
+
+5. **Cetak Rapor**
+   - Pilih siswa
+   - Preview rapor
+   - Print atau save as PDF
+
+### Untuk Guru Mapel
+
+1. **Input Nilai**
+   - Pilih rombel yang ditugaskan
+   - Isi nilai mata pelajaran yang diampu
 
 ## 📁 Struktur File
-- [`Code.gs`](file:///d:/appscript%20github%20%28xampp%29/indenppdb/Code.gs): Backend server script (API GET/POST, validasi kuota server-side, setup database otomatis).
-- [`index.html`](file:///d:/appscript%20github%20%28xampp%29/indenppdb/index.html): Single-page frontend (HTML, CSS Tosca Glassmorphism, JS Logic, Side View Desktop & Mobile).
-- [`appsscript.json`](file:///d:/appscript%20github%20%28xampp%29/indenppdb/appsscript.json): Manifest Apps Script runtime V8 & timezone.
+
+```
+rapor-digital/
+├── index.html              # Halaman utama
+├── css/
+│   ├── style.css          # Styling utama
+│   └── print.css          # Styling untuk print rapor
+├── js/
+│   ├── api.js             # API layer & konfigurasi URL
+│   ├── app.js             # Core aplikasi
+│   ├── auth.js            # Autentikasi & login
+│   ├── admin.js           # Panel admin (rombel & user)
+│   ├── setting.js         # Setting global
+│   ├── siswa.js           # Manajemen data siswa
+│   ├── nilai.js           # Input nilai
+│   ├── ekskul.js          # Ekstrakurikuler
+│   ├── kkm.js             # KKM
+│   ├── cetak.js           # Generate rapor
+│   └── upload.js          # Upload Excel
+├── gas/
+│   └── Code.gs            # Backend Google Apps Script
+└── README.md              # Dokumentasi ini
+```
+
+## 🔧 Konfigurasi
+
+### URL Apps Script
+Edit file `js/api.js`:
+```javascript
+const GAS_URL = 'https://script.google.com/macros/s/YOUR_ID/exec';
+```
+
+### Mata Pelajaran Default
+Edit file `js/admin.js` untuk mengubah daftar mata pelajaran:
+```javascript
+const MAPEL_UTAMA = [
+  'Al-Qur\'an Hadits', 'Aqidah Akhlak', 'Fiqih', 'Sejarah Kebudayaan Islam',
+  'Bahasa Arab', 'PPKn', 'Bahasa Indonesia', 'Matematika', 'IPAS', 'SBdP', 'PJOK'
+];
+const MAPEL_MULOK = ['Bahasa Daerah', 'Bahasa Inggris', 'Aswaja', 'Pego', 'Nahwu-Shorof'];
+```
+
+## 📤 Format Upload Excel
+
+### Template Siswa
+Kolom yang diperlukan:
+- NISN
+- No Induk
+- Nama Siswa (wajib)
+- Nama Panggilan
+- Tempat Lahir
+- Tanggal Lahir (format: YYYY-MM-DD)
+- Nama Orang Tua
+- Pesan Wali Kelas
+
+### Template Nilai
+Kolom yang diperlukan:
+- Nama Siswa (wajib, harus sama dengan data siswa)
+- [Mata Pelajaran 1]
+- [Mata Pelajaran 2]
+- ...
+- Sakit
+- Ijin
+- Alpa
+
+💡 **Tip:** Download template dari aplikasi untuk memastikan format yang benar.
+
+## 🔒 Keamanan
+
+- ✅ Autentikasi berbasis token
+- ✅ Role-based access control
+- ✅ Password minimal 6 karakter
+- ✅ Session management
+- ⚠️ **Ganti password default admin setelah setup**
+- ⚠️ **Jangan share URL deployment ke publik**
+
+## 🐛 Troubleshooting
+
+### "URL Apps Script belum diset"
+- Pastikan `GAS_URL` di `js/api.js` sudah diisi dengan URL deployment yang benar
+
+### "Akses ditolak"
+- Logout dan login ulang
+- Pastikan user sudah di-assign ke rombel yang benar
+
+### Data tidak muncul
+- Cek koneksi internet
+- Cek console browser (F12) untuk error
+- Pastikan backend sudah di-deploy dengan benar
+
+### Upload Excel gagal
+- Pastikan format file sesuai template
+- Pastikan kolom wajib sudah diisi
+- Pastikan nama siswa tidak duplikat
+
+## 📝 Changelog
+
+### v2.0.0 (2026-04-28)
+- ♻️ Refactor: Hapus konsep "Kelas", gunakan "Rombel" sebagai unit utama
+- ✨ Wali kelas langsung di-assign di Rombel
+- ✨ Guru mapel bisa mengajar di beberapa rombel
+- 🐛 Fix: Template Excel menampilkan info rombel tujuan
+- 🐛 Fix: Rapor menampilkan nama rombel
+
+### v1.0.0
+- 🎉 Rilis awal
+- ✨ Manajemen kelas dan rombel
+- ✨ Multi-user dengan role
+- ✨ Input nilai dan cetak rapor
+
+## 📄 Lisensi
+
+MIT License - Bebas digunakan untuk keperluan pendidikan
+
+## 🤝 Kontribusi
+
+Kontribusi sangat diterima! Silakan buat issue atau pull request.
+
+## 📞 Dukungan
+
+Jika ada pertanyaan atau masalah, silakan buat issue di repository ini.
+
+---
+
+Dibuat dengan ❤️ untuk pendidikan Indonesia
