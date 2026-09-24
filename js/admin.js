@@ -139,9 +139,9 @@ async function simpanResetPassword() {
 const MAPEL_UTAMA = [
   'Al-Qur\'an Hadits','Aqidah Akhlak','Fiqih','Bahasa Arab',
   'PPKn','Bahasa Indonesia','Matematika','SBdP','PJOK',
-  'IPAS','Nahwu-Shorof','Sejarah Kebudayaan Islam'
+  'IPAS','Sejarah Kebudayaan Islam'
 ];
-const MAPEL_MULOK = ['Bahasa Daerah','Bahasa Inggris','Pego','Aswaja'];
+const MAPEL_MULOK = ['Bahasa Daerah','Bahasa Inggris','Pego','Aswaja','Nahwu-Shorof'];
 
 let rombelCache = [];
 

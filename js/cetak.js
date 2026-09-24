@@ -58,7 +58,7 @@ async function loadCetakData() {
       kkm:        kkmRes.kkm          || {},
       kegiatan:   ekskulRes.kegiatan  || [],
       ekskul:     ekskulRes.nilai     || [],
-      namaRombel: rombelInfo.nama     || rombelId,
+      namaRombel: rombelInfo.nama ? `${rombelInfo.nama} (${rombelInfo.id})` : rombelId,
       namaWali:   rombelInfo.waliNama || rombelInfo.wali || '',
     };
     populateSiswaSelect();
@@ -127,7 +127,7 @@ function renderRapor() {
   // Pisahkan mapel utama dan muatan lokal
   // MAPEL_MULOK didefinisikan di admin.js, akses via window atau fallback
   const daftarMulok = (typeof MAPEL_MULOK !== 'undefined' ? MAPEL_MULOK : [
-    'Bahasa Daerah', 'Bahasa Inggris', 'Pego'
+    'Bahasa Daerah', 'Bahasa Inggris', 'Pego', 'Aswaja', 'Nahwu-Shorof'
   ]);
 
   // Kelompokkan: utama dulu, lalu mulok
