@@ -49,6 +49,9 @@ async function loadCetakData() {
     // Cari data rombel yang sesuai dengan rombelId user
     const rombelList = rombelRes.rombel || [];
     const rombelInfo = rombelList.find(r => r.id === rombelId) || {};
+    const formattedNamaRombel = (rombelInfo.nama && rombelInfo.nama !== rombelId)
+      ? `${rombelInfo.nama} (${rombelId})`
+      : (rombelInfo.nama || rombelId);
 
     cetakCache = {
       setting:    settingRes.setting  || {},
@@ -58,7 +61,7 @@ async function loadCetakData() {
       kkm:        kkmRes.kkm          || {},
       kegiatan:   ekskulRes.kegiatan  || [],
       ekskul:     ekskulRes.nilai     || [],
-      namaRombel: rombelInfo.nama     || rombelId,
+      namaRombel: formattedNamaRombel,
       namaWali:   rombelInfo.waliNama || rombelInfo.wali || '',
     };
     populateSiswaSelect();
@@ -92,11 +95,17 @@ function populateSiswaSelect() {
     opt.textContent = `${i+1}. ${s.nama}`;
     sel.appendChild(opt);
   });
+  const savedSiswaIdx = localStorage.getItem('activeCetakSiswaIdx_' + getActiveRombelId('cetak'));
+  if (savedSiswaIdx !== null && sel.options[parseInt(savedSiswaIdx) + 1]) {
+    sel.value = savedSiswaIdx;
+    renderRapor();
+  }
 }
 
 function renderRapor() {
   const idx = document.getElementById('selectSiswa').value;
   if (idx === '') { document.getElementById('raporPreview').innerHTML = ''; return; }
+  localStorage.setItem('activeCetakSiswaIdx_' + getActiveRombelId('cetak'), idx);
   const si = parseInt(idx);
   const { setting, siswa, mapel, nilai, kkm, kegiatan, ekskul, namaRombel, namaWali } = cetakCache;
   const s = siswa[si];
@@ -125,14 +134,35 @@ function renderRapor() {
 
   // ===== TABEL NILAI =====
   // Pisahkan mapel utama dan muatan lokal
-  // MAPEL_MULOK didefinisikan di admin.js, akses via window atau fallback
+  // MAPEL_MULOK dan MAPEL_UTAMA didefinisikan di admin.js, akses via window atau fallback
+  const daftarUtama = (typeof MAPEL_UTAMA !== 'undefined' ? MAPEL_UTAMA : [
+    'Al-Qur\'an Hadits','Aqidah Akhlak','Fiqih','Sejarah Kebudayaan Islam',
+    'Bahasa Arab','PPKn','Bahasa Indonesia','Matematika','IPAS','SBdP','PJOK'
+  ]);
   const daftarMulok = (typeof MAPEL_MULOK !== 'undefined' ? MAPEL_MULOK : [
-    'Bahasa Daerah', 'Bahasa Inggris', 'Pego'
+    'Bahasa Daerah', 'Bahasa Inggris', 'Aswaja', 'Pego', 'Nahwu-Shorof'
   ]);
 
-  // Kelompokkan: utama dulu, lalu mulok
+  // Kelompokkan & urutkan: utama dulu, lalu mulok
   const mapelUtama = mapel.filter(m => !daftarMulok.includes(m));
+  mapelUtama.sort((a, b) => {
+    const idxA = daftarUtama.indexOf(a);
+    const idxB = daftarUtama.indexOf(b);
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return 0;
+  });
+
   const mapelMulok = mapel.filter(m =>  daftarMulok.includes(m));
+  mapelMulok.sort((a, b) => {
+    const idxA = daftarMulok.indexOf(a);
+    const idxB = daftarMulok.indexOf(b);
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return 0;
+  });
   const adaMulok   = mapelMulok.length > 0;
 
   // Buat baris nilai dengan subheader MUATAN LOKAL jika ada

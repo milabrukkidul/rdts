@@ -40,6 +40,9 @@ function showPage(name) {
   const btn = document.querySelector(`.nav-btn[data-page="${name}"]`);
   if (btn) btn.classList.add('active');
 
+  // Simpan halaman terakhir yang dibuka
+  try { localStorage.setItem('activePage', name); } catch(e) {}
+
   // Update judul topbar
   const titleEl = document.getElementById('topbarTitle');
   if (titleEl) titleEl.textContent = PAGE_TITLES[name] || name;
@@ -136,7 +139,8 @@ function populateAdminRombelSelectors() {
     const sel = document.getElementById(`adminRombelSelect-${page}`);
     if (!bar || !sel) return;
     bar.classList.remove('hidden');
-    const prev = sel.value;
+    const savedRombel = localStorage.getItem(`activeRombel_${page}`) || localStorage.getItem('activeRombel') || '';
+    const prev = sel.value || savedRombel;
     sel.innerHTML = '<option value="">-- Pilih Rombel --</option>';
     (window._rombelList || []).forEach(r => {
       const opt = document.createElement('option');
@@ -145,6 +149,18 @@ function populateAdminRombelSelectors() {
       if (r.id === prev) opt.selected = true;
       sel.appendChild(opt);
     });
+    if (prev && (window._rombelList || []).some(r => r.id === prev)) {
+      sel.value = prev;
+    }
+    if (!sel._hasSaveListener) {
+      sel._hasSaveListener = true;
+      sel.addEventListener('change', () => {
+        if (sel.value) {
+          localStorage.setItem(`activeRombel_${page}`, sel.value);
+          localStorage.setItem('activeRombel', sel.value);
+        }
+      });
+    }
   });
 }
 
@@ -192,7 +208,11 @@ function deskripsiPredikat(predikat, panggilan, mapel) {
 function adminTab(name, btn) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  document.getElementById('adminTab-' + name).classList.add('active');
+  const target = document.getElementById('adminTab-' + name);
+  if (target) target.classList.add('active');
+  if (btn) btn.classList.add('active');
+  try { localStorage.setItem('activeAdminTab', name); } catch(e) {}
+}
   if (btn) btn.classList.add('active');
 }
 

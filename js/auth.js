@@ -44,6 +44,10 @@ async function doLogin() {
 function doLogout() {
   currentUser = null;
   sessionStorage.removeItem('currentUser');
+  try {
+    localStorage.removeItem('activePage');
+    localStorage.removeItem('activeAdminTab');
+  } catch(e) {}
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('mainApp').classList.add('hidden');
   document.getElementById('loginUser').value = '';
@@ -55,8 +59,19 @@ function showMainApp() {
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
   buildNavbar();
-  if (currentUser.role === 'admin') {
-    showPage('dashboard');
+
+  const savedPage = localStorage.getItem('activePage') || 'dashboard';
+  const role = currentUser ? currentUser.role : '';
+
+  const allowedPagesMap = {
+    admin:     ['dashboard', 'admin', 'setting', 'siswa', 'nilai', 'ekskul', 'kkm', 'cetak', 'profil'],
+    walikelas: ['dashboard', 'siswa', 'nilai', 'ekskul', 'cetak', 'profil'],
+    guruMapel: ['dashboard', 'nilai', 'profil']
+  };
+  const allowed = allowedPagesMap[role] || ['dashboard', 'profil'];
+  const targetPage = allowed.includes(savedPage) ? savedPage : 'dashboard';
+
+  if (role === 'admin') {
     const override = localStorage.getItem('gasUrl');
     const inp = document.getElementById('adminGasUrl');
     if (inp) inp.value = override || '';
@@ -65,16 +80,21 @@ function showMainApp() {
       st.textContent = override ? '✅ Override aktif' : '✅ Menggunakan GAS_URL dari api.js';
       st.className = 'conn-status ok';
     }
-    loadAdminData();
+    loadAdminData().then(() => {
+      const savedTab = localStorage.getItem('activeAdminTab');
+      if (savedTab && document.getElementById('adminTab-' + savedTab)) {
+        const btn = document.querySelector(`.tab-btn[onclick*="'${savedTab}'"]`);
+        adminTab(savedTab, btn);
+      }
+    });
     loadSetting();
-  } else if (currentUser.role === 'walikelas') {
-    // Sembunyikan selector rombel untuk wali kelas
+    showPage(targetPage);
+  } else if (role === 'walikelas') {
     hideRombelSelectorsForWaliKelas();
-    showPage('dashboard');
+    showPage(targetPage);
   } else {
-    // guruMapel — punya array kelas, tampilkan selector
-    showPage('dashboard');
     buildGuruKelasSelector();
+    showPage(targetPage);
   }
 }
 

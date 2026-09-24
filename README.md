@@ -161,11 +161,10 @@ const GAS_URL = 'https://script.google.com/macros/s/YOUR_ID/exec';
 Edit file `js/admin.js` untuk mengubah daftar mata pelajaran:
 ```javascript
 const MAPEL_UTAMA = [
-  'Al-Qur\'an Hadits', 'Aqidah Akhlak', 'Fiqih', 'Bahasa Arab',
-  'PPKn', 'Bahasa Indonesia', 'Matematika', 'SBdP', 'PJOK',
-  'IPA', 'IPS', 'Sejarah Kebudayaan Islam'
+  'Al-Qur\'an Hadits', 'Aqidah Akhlak', 'Fiqih', 'Sejarah Kebudayaan Islam',
+  'Bahasa Arab', 'PPKn', 'Bahasa Indonesia', 'Matematika', 'IPAS', 'SBdP', 'PJOK'
 ];
-const MAPEL_MULOK = ['Bahasa Daerah', 'Bahasa Inggris', 'Pego'];
+const MAPEL_MULOK = ['Bahasa Daerah', 'Bahasa Inggris', 'Aswaja', 'Pego', 'Nahwu-Shorof'];
 ```
 
 ## 📤 Format Upload Excel
