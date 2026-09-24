@@ -240,10 +240,10 @@ function renderRapor() {
   const tglRaporFmt = formatTanggal(setting.tglRapor);
   const tempatTgl   = [setting.tempatRapor, tglRaporFmt].filter(Boolean).join(', ');
 
-  // Huruf seksi
+  // Huruf seksi (ekskul & absensi sejajar di baris B)
   const sekEkskul  = 'B';
-  const sekHadir   = adaEkskul ? 'C' : 'B';
-  const sekCatatan = adaEkskul ? 'D' : 'C';
+  const sekHadir   = 'B';
+  const sekCatatan = 'C';
 
   const html = `
   <div class="rapor-page">
@@ -285,26 +285,31 @@ function renderRapor() {
       </tbody>
     </table>
 
-    ${adaEkskul ? `
-    <div class="rapor-section-title">${sekEkskul}. EKSTRAKURIKULER</div>
-    <table class="rapor-ekskul-table">
-      <thead><tr>
-        <th style="width:32px;">No</th>
-        <th>Kegiatan</th>
-        <th style="width:130px;">Predikat</th>
-      </tr></thead>
-      <tbody>${ekskulRows}</tbody>
-    </table>` : ''}
-
-    <div class="rapor-section-title">${sekHadir}. KETIDAKHADIRAN</div>
-    <table class="rapor-kehadiran-table">
-      <thead><tr><th>Sakit</th><th>Ijin</th><th>Alpa</th></tr></thead>
-      <tbody><tr>
-        <td>${sakit} hari</td>
-        <td>${ijin} hari</td>
-        <td>${alpa} hari</td>
-      </tr></tbody>
-    </table>
+    <div class="rapor-row-dua">
+      <div class="rapor-col-ekskul">
+        <div class="rapor-section-title">${sekEkskul}. EKSTRAKURIKULER</div>
+        ${adaEkskul ? `
+        <table class="rapor-ekskul-table">
+          <thead><tr>
+            <th style="width:32px;">No</th>
+            <th>Kegiatan</th>
+            <th style="width:100px;">Predikat</th>
+          </tr></thead>
+          <tbody>${ekskulRows}</tbody>
+        </table>` : '<p class="rapor-nihil">-</p>'}
+      </div>
+      <div class="rapor-col-absensi">
+        <div class="rapor-section-title">${sekHadir}. ABSENSI</div>
+        <table class="rapor-kehadiran-table">
+          <thead><tr><th>Sakit</th><th>Ijin</th><th>Alpa</th></tr></thead>
+          <tbody><tr>
+            <td>${sakit} hari</td>
+            <td>${ijin} hari</td>
+            <td>${alpa} hari</td>
+          </tr></tbody>
+        </table>
+      </div>
+    </div>
 
     ${s.pesan ? `
     <div class="rapor-section-title">${sekCatatan}. CATATAN WALI KELAS</div>

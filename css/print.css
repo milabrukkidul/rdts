@@ -64,6 +64,11 @@
   /* Avoid page break inside signature */
   .rapor-ttd { page-break-inside: avoid; }
 
+  /* Baris sejajar Ekskul & Absensi saat print */
+  .rapor-row-dua { display: flex !important; gap: 10px; align-items: flex-start; page-break-inside: avoid; }
+  .rapor-col-ekskul { flex: 1; min-width: 0; }
+  .rapor-col-absensi { flex: 0 0 auto; width: 200px; }
+
   /* Colors for print */
   .rapor-nilai-table th,
   .rapor-ekskul-table th,
