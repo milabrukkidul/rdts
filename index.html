@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rapor Digital</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/print.css" media="print" />
+  <!-- SheetJS untuk baca/tulis file Excel -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <div class="login-logo">📚</div>
+    <h1>Rapor Digital Tengah Semester (RDTS)</h1>
+    <p class="login-sub">Sistem Informasi Rapor UTS MI Labkid</p>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="loginUser" placeholder="Masukkan username" autocomplete="username"/>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="Masukkan password" autocomplete="current-password"/>
+    </div>
+    <button class="btn-primary btn-block" onclick="doLogin()">🔐 Masuk</button>
+    <p id="loginError" class="login-error hidden"></p>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div id="mainApp" class="hidden">
+
+  <!-- OVERLAY (klik untuk tutup sidebar di mobile) -->
+  <div id="sidebarOverlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-brand">
+      <span class="sidebar-brand-icon">📋</span>
+      <span class="sidebar-brand-text">Rapor Digital</span>
+    </div>
+
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">?</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarUserName">—</div>
+        <div class="sidebar-user-role" id="sidebarUserRole">—</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav" id="navLinks"></nav>
+
+    <div class="sidebar-footer">
+      <button class="sidebar-logout" onclick="doLogout()">
+        <span>🚪</span>
+        <span class="sidebar-nav-label">Keluar</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- APP WRAPPER: topbar + konten -->
+  <div class="app-wrapper">
+    <header class="topbar">
+      <button class="topbar-toggle" onclick="toggleSidebar()" title="Menu">
+        <span></span><span></span><span></span>
+      </button>
+      <span class="topbar-title" id="topbarTitle">Dashboard</span>
+    </header>
+
+    <main class="main-content">
+
+  <!-- ===== DASHBOARD ===== -->
+  <div id="page-dashboard" class="page">
+
+    <!-- Selamat datang + info user -->
+    <div class="dash-welcome">
+      <div id="dash-user-info" class="dash-user-info">
+        <div class="dash-avatar">?</div>
+        <div>
+          <div class="dash-user-name">Memuat...</div>
+          <div class="dash-user-role"></div>
+        </div>
+      </div>
+      <div class="dash-welcome-text">
+        <h2>Selamat Datang 👋</h2>
+        <p>Rapor Digital Tengah Semester — MI Labkid</p>
+      </div>
+    </div>
+
+    <!-- Kartu statistik -->
+    <div class="dash-stats">
+      <div class="dash-stat-card" id="dash-card-rombel">
+        <div class="dash-stat-icon">🏫</div>
+        <div class="dash-stat-body">
+          <div class="dash-stat-value" id="dash-stat-rombel">—</div>
+          <div class="dash-stat-label">Rombel</div>
+        </div>
+      </div>
+      <div class="dash-stat-card">
+        <div class="dash-stat-icon">👤</div>
+        <div class="dash-stat-body">
+          <div class="dash-stat-value" id="dash-stat-siswa">—</div>
+          <div class="dash-stat-label">Siswa</div>
+        </div>
+      </div>
+      <div class="dash-stat-card">
+        <div class="dash-stat-icon">📚</div>
+        <div class="dash-stat-body">
+          <div class="dash-stat-value" id="dash-stat-mapel">—</div>
+          <div class="dash-stat-label">Mata Pelajaran</div>
+        </div>
+      </div>
+      <div class="dash-stat-card" id="dash-card-user">
+        <div class="dash-stat-icon">👥</div>
+        <div class="dash-stat-body">
+          <div class="dash-stat-value" id="dash-stat-user">—</div>
+          <div class="dash-stat-label">Pengguna</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pengumuman dari Admin (read-only untuk non-admin) -->
+    <div id="dash-announcement-feed" class="dash-ann-feed"></div>
+
+    <!-- Panel Buat/Edit Pengumuman (hanya admin) -->
+    <div id="dash-announcement-editor" class="dash-section hidden">
+      <div class="dash-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>📢 Buat Pengumuman</span>
+      </div>
+      <input type="hidden" id="ann-edit-id"/>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Judul</label>
+        <input type="text" id="ann-judul" placeholder="Contoh: Pengumpulan Nilai UTS"/>
+      </div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Isi Pengumuman</label>
+        <textarea id="ann-isi" rows="4" placeholder="Tulis pengumuman di sini..."></textarea>
+      </div>
+      <div class="form-group" style="margin-bottom:14px;">
+        <label>URL Tautan (opsional)</label>
+        <input type="url" id="ann-url" placeholder="https://..."/>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-primary" onclick="submitAnnouncement()">💾 Posting</button>
+        <button class="btn-warning" id="ann-cancel-btn" onclick="cancelEditAnnouncement()" style="display:none;">✖ Batal Edit</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== PROFIL USER ===== -->
+  <div id="page-profil" class="page">
+    <div class="page-header">
+      <h2>👤 Profil Saya</h2>
+    </div>
+
+    <div class="profil-layout">
+
+      <!-- Kartu identitas -->
+      <div class="profil-card profil-identity">
+        <div class="profil-avatar-wrap">
+          <div class="profil-avatar" id="profil-avatar">?</div>
+        </div>
+        <div class="profil-identity-info">
+          <div class="profil-field">
+            <span class="profil-field-label">Nama Lengkap</span>
+            <span class="profil-field-value" id="profil-nama-display">—</span>
+          </div>
+          <div class="profil-field">
+            <span class="profil-field-label">Username</span>
+            <span class="profil-field-value" id="profil-username-display">—</span>
+          </div>
+          <div class="profil-field">
+            <span class="profil-field-label">Role</span>
+            <span class="profil-field-value" id="profil-role-display">—</span>
+          </div>
+          <div class="profil-field">
+            <span class="profil-field-label">Rombel</span>
+            <span class="profil-field-value" id="profil-rombel-display">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form edit nama -->
+      <div class="profil-card">
+        <h3 class="profil-card-title">✏️ Ubah Nama</h3>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label>Nama Lengkap Baru</label>
+          <input type="text" id="profil-nama-input" placeholder="Masukkan nama lengkap"/>
+        </div>
+        <button class="btn-success" onclick="simpanNamaProfil()">💾 Simpan Nama</button>
+      </div>
+
+      <!-- Form ganti password -->
+      <div class="profil-card">
+        <h3 class="profil-card-title">🔑 Ganti Password</h3>
+
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Password Lama</label>
+          <div class="profil-pass-wrap">
+            <input type="password" id="profil-pass-lama" placeholder="Masukkan password lama"/>
+            <button class="profil-eye-btn" onclick="toggleProfilPass('profil-pass-lama','profil-eye-lama')" id="profil-eye-lama">👁️</button>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Password Baru</label>
+          <div class="profil-pass-wrap">
+            <input type="password" id="profil-pass-baru" placeholder="Minimal 6 karakter"/>
+            <button class="profil-eye-btn" onclick="toggleProfilPass('profil-pass-baru','profil-eye-baru')" id="profil-eye-baru">👁️</button>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Konfirmasi Password Baru</label>
+          <div class="profil-pass-wrap">
+            <input type="password" id="profil-pass-konfirm" placeholder="Ulangi password baru"/>
+            <button class="profil-eye-btn" onclick="toggleProfilPass('profil-pass-konfirm','profil-eye-konfirm')" id="profil-eye-konfirm">👁️</button>
+          </div>
+        </div>
+
+        <p id="profil-pass-error" class="login-error hidden" style="margin-bottom:10px;"></p>
+        <button class="btn-primary" onclick="simpanPasswordProfil()">🔑 Ubah Password</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== HALAMAN ADMIN: KELOLA KELAS & USER ===== -->
+  <div id="page-admin" class="page">
+    <div class="page-header">
+      <h2>🛠️ Panel Admin</h2>
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="adminTab('kelas', this)">🏫 Kelola Rombel</button>
+      <button class="tab-btn" onclick="adminTab('user', this)">👥 Kelola User</button>
+      <button class="tab-btn" onclick="adminTab('gasurl', this)">🔗 URL Apps Script</button>
+    </div>
+
+    <!-- Tab Kelas & Rombel -->
+    <div id="adminTab-kelas" class="tab-content active">
+      <!-- ROMBEL -->
+      <div class="page-header" style="margin-top:16px;">
+        <h3>📦 Rombongan Belajar (Rombel)</h3>
+        <button class="btn-success" onclick="modalRombel()">➕ Tambah Rombel</button>
+      </div>
+      <div class="info-box" style="margin-bottom:12px;">
+        <p style="font-size:0.85rem;">Rombel adalah kelompok belajar yang berisi daftar mata pelajaran. Setiap rombel bisa ditugaskan ke wali kelas. Data siswa, nilai, ekskul, dan KKM disimpan per rombel.</p>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>No</th><th>ID Rombel</th><th>Nama Rombel</th><th>Wali Kelas</th><th>Daftar Mapel</th><th>Aksi</th></tr></thead>
+          <tbody id="bodyRombel"></tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- Tab User -->
+    <div id="adminTab-user" class="tab-content">
+      <div class="page-header" style="margin-top:16px;">
+        <h3>Daftar User</h3>
+        <button class="btn-success" onclick="modalUser()">➕ Tambah User</button>
+      </div>
+      <div class="table-wrapper">
+        <table id="tblUser">
+          <thead><tr><th>No</th><th>Username</th><th>Nama Lengkap</th><th>Role</th><th>Rombel</th><th>Aksi</th></tr></thead>
+          <tbody id="bodyUser"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab GAS URL -->
+    <div id="adminTab-gasurl" class="tab-content">
+      <div style="max-width:600px;margin-top:16px;">
+        <div class="info-box" style="margin-bottom:16px;background:#fefce8;border-color:#fde68a;">
+          <h4>⚠️ URL sudah terpasang di kode</h4>
+          <p style="font-size:0.85rem;margin-top:4px;">URL Apps Script sudah di-hardcode di file <code>js/api.js</code> baris pertama (konstanta <code>GAS_URL</code>). Tidak perlu diubah lagi setelah deploy.</p>
+          <p style="font-size:0.85rem;margin-top:6px;">Kolom di bawah hanya untuk <strong>override sementara</strong> (tersimpan di browser ini saja).</p>
+        </div>
+        <div class="form-group">
+          <label>🔗 Override URL (opsional — kosongkan untuk pakai URL di kode)</label>
+          <input type="text" id="adminGasUrl" placeholder="https://script.google.com/macros/s/..."/>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button class="btn-primary" onclick="saveGasUrl()">💾 Simpan Override</button>
+          <button class="btn-danger"  onclick="clearGasUrl()">🗑️ Hapus Override</button>
+          <span id="connStatus" class="conn-status"></span>
+        </div>
+        <div class="info-box" style="margin-top:16px;">
+          <h4>📖 Cara Setup (sekali saja)</h4>
+          <ol>
+            <li>Buka Google Sheets → <strong>Extensions → Apps Script</strong></li>
+            <li>Paste seluruh isi file <code>gas/Code.gs</code></li>
+            <li>Jalankan fungsi <code>setupSheets()</code> <strong>sekali</strong></li>
+            <li><strong>Deploy → New Deployment → Web App</strong><br/>Execute as: <em>Me</em> | Access: <em>Anyone</em></li>
+            <li>Copy URL Web App → paste ke konstanta <code>GAS_URL</code> di <code>js/api.js</code></li>
+            <li>Commit & push ke GitHub — selesai, tidak perlu diubah lagi</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SETTING GLOBAL ===== -->
+  <div id="page-setting" class="page">
+    <div class="page-header">
+      <h2>⚙️ Setting Madrasah</h2>
+      <div class="btn-group">
+        <button class="btn-primary" onclick="loadSetting()">🔄 Muat</button>
+        <button class="btn-success" onclick="saveSetting()">💾 Simpan</button>
+      </div>
+    </div>
+    <p style="font-size:0.83rem;color:#6b7280;margin-bottom:14px;">
+      💡 Setting ini berlaku untuk <strong>semua kelas</strong>. Tersimpan otomatis saat Anda mengubah isian.
+    </p>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>URL KOP (gambar header, maks 1000×300px)</label>
+        <input type="text" id="s_urlKop" placeholder="https://... URL gambar KOP"/>
+        <div id="kopPreview" style="margin-top:8px;"></div>
+      </div>
+      <div class="form-group"><label>Nama Satuan Pendidikan</label><input type="text" id="s_namaSatuan"/></div>
+      <div class="form-group"><label>Nama Kepala Madrasah</label><input type="text" id="s_namaKepala"/></div>
+      <div class="form-group">
+        <label>Semester</label>
+        <select id="s_semester">
+          <option value="I (GANJIL)">I (GANJIL)</option>
+          <option value="II (GENAP)">II (GENAP)</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Tahun Pelajaran</label><input type="text" id="s_tahunPelajaran" placeholder="2024/2025"/></div>
+      <div class="form-group"><label>Judul Rapor</label><input type="text" id="s_judul" placeholder="LAPORAN HASIL BELAJAR SISWA"/></div>
+      <div class="form-group"><label>Tempat Rapor</label><input type="text" id="s_tempatRapor"/></div>
+      <div class="form-group"><label>Tanggal Penerimaan Rapor</label><input type="date" id="s_tglRapor"/></div>
+    </div>
+  </div>
+
+  <!-- ===== DATA SISWA ===== -->
+  <div id="page-siswa" class="page">
+    <div id="adminRombelBar-siswa" class="admin-kelas-bar hidden">
+      <label>🏫 Rombel:</label>
+      <select id="adminRombelSelect-siswa" onchange="loadSiswa()"></select>
+    </div>
+    <div class="page-header">
+      <h2>👤 Data Siswa</h2>
+      <div class="btn-group">
+        <button class="btn-success" onclick="tambahSiswa()">➕ Tambah Siswa</button>
+        <button class="btn-warning" onclick="showModalUploadSiswa()">📤 Upload Excel</button>
+        <a id="btnTemplateSiswa" class="btn-warning" style="padding:7px 14px;border-radius:6px;font-size:0.83rem;font-weight:600;text-decoration:none;cursor:pointer;" onclick="downloadTemplateSiswa()">📥 Template .xlsx</a>
+      </div>
+    </div>
+    
+    <!-- Peringatan jika rombel belum dipilih (untuk admin) -->
+    <div id="siswaRombelWarning" class="info-box" style="margin-bottom:14px;background:#fef2f2;border-color:#fecaca;display:none;">
+      <p style="font-size:0.88rem;font-weight:600;color:#dc2626;margin-bottom:4px;">⚠️ Pilih Rombel Terlebih Dahulu</p>
+      <p style="font-size:0.83rem;color:#555;margin:0;">Untuk mengelola data siswa, pilih rombel dari dropdown di atas. Template Excel dan upload akan disesuaikan dengan rombel yang dipilih.</p>
+    </div>
+
+    <div class="table-wrapper">
+      <table id="tblSiswa">
+        <thead>
+          <tr><th>No</th><th>NISN</th><th>No. Induk</th><th>Nama Siswa</th><th>Panggilan</th><th>Tempat Lahir</th><th>Tgl Lahir</th><th>Nama Ortu</th><th>Aksi</th></tr>
+        </thead>
+        <tbody id="bodySiswa"></tbody>
+      </table>
+    </div>
+    <div id="modalSiswa" class="modal hidden">
+      <div class="modal-content">
+        <h3 id="modalSiswaTitle">Tambah Siswa</h3>
+        <input type="hidden" id="ms_rowIndex"/>
+        <div class="form-grid">
+          <div class="form-group"><label>NISN</label><input type="text" id="ms_nisn"/></div>
+          <div class="form-group"><label>No. Induk</label><input type="text" id="ms_noInduk"/></div>
+          <div class="form-group"><label>Nama Siswa</label><input type="text" id="ms_nama"/></div>
+          <div class="form-group"><label>Nama Panggilan</label><input type="text" id="ms_panggilan"/></div>
+          <div class="form-group"><label>Tempat Lahir</label><input type="text" id="ms_tempatLahir"/></div>
+          <div class="form-group"><label>Tanggal Lahir</label><input type="date" id="ms_tglLahir"/></div>
+          <div class="form-group"><label>Nama Orang Tua</label><input type="text" id="ms_namaOrtu"/></div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-success" onclick="simpanSiswa()">💾 Simpan</button>
+          <button class="btn-danger" onclick="closeModal('modalSiswa')">✖ Batal</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== REKAP NILAI ===== -->
+  <div id="page-nilai" class="page">
+    <div id="adminRombelBar-nilai" class="admin-kelas-bar hidden">
+      <label>🏫 Rombel:</label>
+      <select id="adminRombelSelect-nilai" onchange="loadNilai()"></select>
+    </div>
+    <div class="page-header">
+      <h2>📊 Rekap Nilai</h2>
+      <div class="btn-group">
+        <button class="btn-warning" onclick="showModalUploadNilai()">📤 Upload Excel</button>
+        <a class="btn-warning" style="padding:7px 14px;border-radius:6px;font-size:0.83rem;font-weight:600;text-decoration:none;cursor:pointer;" onclick="downloadTemplateNilai()">📥 Template .xlsx</a>
+        <button class="btn-success" onclick="saveNilai()">💾 Simpan</button>
+      </div>
+    </div>
+    <div id="nilaiContainer" class="table-wrapper"><p class="hint">Memuat data nilai...</p></div>
+  </div>
+
+  <!-- ===== EKSTRAKURIKULER ===== -->
+  <div id="page-ekskul" class="page">
+    <div id="adminRombelBar-ekskul" class="admin-kelas-bar hidden">
+      <label>🏫 Rombel:</label>
+      <select id="adminRombelSelect-ekskul" onchange="loadEkskul()"></select>
+    </div>
+    <div class="page-header">
+      <h2>🏆 Ekstrakurikuler</h2>
+      <div class="btn-group">
+        <button class="btn-success" onclick="saveEkskul()">💾 Simpan</button>
+      </div>
+    </div>
+    <div id="ekskulContainer" class="table-wrapper"><p class="hint">Memuat data ekskul...</p></div>
+  </div>
+
+  <!-- ===== KKM ===== -->
+  <div id="page-kkm" class="page">
+    <div id="adminRombelBar-kkm" class="admin-kelas-bar hidden">
+      <label>🏫 Rombel:</label>
+      <select id="adminRombelSelect-kkm" onchange="loadKKM()"></select>
+    </div>
+    <div class="page-header">
+      <h2>📌 KKM</h2>
+      <div class="btn-group">
+        <button class="btn-primary" onclick="loadKKM()">🔄 Muat</button>
+        <button class="btn-success" onclick="saveKKM()">💾 Simpan</button>
+      </div>
+    </div>
+    <div id="kkmContainer" class="table-wrapper"><p class="hint">Klik "Muat" untuk menampilkan KKM.</p></div>
+  </div>
+
+  <!-- ===== CETAK RAPOR ===== -->
+  <div id="page-cetak" class="page">
+    <div id="adminRombelBar-cetak" class="admin-kelas-bar hidden no-print">
+      <label>🏫 Rombel:</label>
+      <select id="adminRombelSelect-cetak" onchange="loadCetakData()"></select>
+    </div>
+    <div class="page-header no-print">
+      <h2>🖨️ Cetak Rapor</h2>
+      <div class="btn-group">
+        <button class="btn-success" onclick="cetakRapor()">🖨️ Print</button>
+      </div>
+    </div>
+    <div class="siswa-selector no-print">
+      <label>Pilih Siswa:</label>
+      <select id="selectSiswa" onchange="renderRapor()">
+        <option value="">-- Pilih Siswa --</option>
+      </select>
+    </div>
+    <div id="raporPreview"></div>
+  </div>
+
+    </main>
+  </div><!-- end .app-wrapper -->
+
+</div><!-- end #mainApp -->
+
+<!-- Modal User -->
+<div id="modalUser" class="modal hidden">
+  <div class="modal-content" style="max-width:480px;">
+    <h3 id="modalUserTitle">Tambah User</h3>
+    <input type="hidden" id="mu_idx"/>
+    <div class="form-grid">
+      <div class="form-group"><label>Username</label><input type="text" id="mu_username"/></div>
+      <div class="form-group"><label>Password</label><input type="password" id="mu_password" placeholder="Kosongkan jika tidak diubah"/></div>
+      <div class="form-group full"><label>Nama Lengkap</label><input type="text" id="mu_nama"/></div>
+      <div class="form-group full">
+        <label>Role</label>
+        <select id="mu_role">
+          <option value="admin">Admin</option>
+          <option value="walikelas">Wali Kelas</option>
+          <option value="guruMapel">Guru Mapel</option>
+        </select>
+        <small style="color:#888;margin-top:4px;">Penugasan rombel diatur setelah user dibuat.</small>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-success" onclick="simpanUser()">💾 Simpan</button>
+      <button class="btn-danger" onclick="closeModal('modalUser')">✖ Batal</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Reset Password -->
+<div id="modalResetPass" class="modal hidden">
+  <div class="modal-content" style="max-width:420px;">
+    <h3>🔑 Reset Password</h3>
+    <p style="margin-bottom:16px;color:#555;font-size:0.9rem;">
+      Reset password untuk: <strong id="rp_usernameLabel"></strong>
+    </p>
+    <input type="hidden" id="rp_username"/>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>Password Baru</label>
+      <div style="position:relative;">
+        <input type="password" id="rp_newPass" placeholder="Masukkan password baru" style="padding-right:40px;"/>
+        <button onclick="togglePassVisibility('rp_newPass','rp_eyeBtn')" id="rp_eyeBtn"
+          style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1rem;">👁️</button>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:4px;">
+      <label>Konfirmasi Password Baru</label>
+      <input type="password" id="rp_confirmPass" placeholder="Ulangi password baru"/>
+    </div>
+    <p id="rp_error" class="login-error hidden" style="margin-bottom:8px;"></p>
+    <div class="modal-actions">
+      <button class="btn-success" onclick="simpanResetPassword()">🔑 Reset Password</button>
+      <button class="btn-danger" onclick="closeModal('modalResetPass')">✖ Batal</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Rombel -->
+<div id="modalRombel" class="modal hidden">
+  <div class="modal-content" style="max-width:640px;">
+    <h3 id="modalRombelTitle">Tambah Rombel</h3>
+    <input type="hidden" id="mr_id_hidden"/>
+    <div class="form-grid" style="margin-bottom:14px;">
+      <div class="form-group">
+        <label>ID Rombel <small style="color:#888;">(unik, tanpa spasi)</small></label>
+        <input type="text" id="mr_id" placeholder="rombel_1"/>
+      </div>
+      <div class="form-group">
+        <label>Nama Rombel</label>
+        <input type="text" id="mr_nama" placeholder="Kelas 1"/>
+      </div>
+      <div class="form-group" style="grid-column:1/-1;">
+        <label>Wali Kelas</label>
+        <select id="mr_wali" style="width:100%;padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:0.88rem;"></select>
+      </div>
+    </div>
+
+    <!-- Referensi Mapel -->
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px;margin-bottom:14px;">
+      <p style="font-weight:600;font-size:0.85rem;color:#0369a1;margin-bottom:10px;">📚 Pilih dari Referensi Mata Pelajaran</p>
+
+      <p style="font-size:0.78rem;color:#555;margin-bottom:6px;font-weight:600;">— Mata Pelajaran Utama —</p>
+      <div id="refMapelUtama" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+
+      <p style="font-size:0.78rem;color:#555;margin-bottom:6px;font-weight:600;">— Muatan Lokal (Mulok) —</p>
+      <div id="refMapelMulok" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+
+      <p style="font-size:0.78rem;color:#555;margin-bottom:6px;font-weight:600;">— Lainnya (ketik manual) —</p>
+      <div style="display:flex;gap:6px;">
+        <input type="text" id="mr_mapelCustom" placeholder="Nama mata pelajaran..." style="flex:1;padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:0.85rem;"/>
+        <button class="btn-success" onclick="tambahMapelCustomRombel()" style="padding:6px 12px;font-size:0.83rem;">➕ Tambah</button>
+      </div>
+    </div>
+
+    <!-- Daftar mapel yang sudah dipilih -->
+    <div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <label style="font-weight:600;font-size:0.85rem;">✅ Daftar Mapel Terpilih <span id="mr_jumlah" style="color:#888;font-weight:normal;"></span></label>
+        <button onclick="kosongkanMapelRombel()" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:0.8rem;">🗑️ Kosongkan</button>
+      </div>
+      <div id="rombelMapelList" style="display:flex;flex-direction:column;gap:5px;max-height:220px;overflow-y:auto;padding:4px;border:1px solid #e5e7eb;border-radius:6px;background:#fafafa;"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-success" onclick="simpanRombel()">💾 Simpan Rombel</button>
+      <button class="btn-danger"  onclick="closeModal('modalRombel')">✖ Batal</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Assign Rombel ke Guru Mapel -->
+<div id="modalAssignRombelGuru" class="modal hidden">
+  <div class="modal-content" style="max-width:480px;">
+    <h3>🏫 Assign Rombel ke Guru Mapel</h3>
+    <p style="font-size:0.85rem;color:#555;margin-bottom:14px;">
+      Guru: <strong id="assignGuruLabel"></strong><br/>
+      Centang rombel yang boleh diisi nilainya oleh guru ini.
+    </p>
+    <input type="hidden" id="assignGuruUsername"/>
+    <div id="assignRombelCheckboxes" style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;padding:8px;border:1px solid #e5e7eb;border-radius:6px;background:#f9fafb;margin-bottom:12px;"></div>
+    <p id="assignError" style="color:#dc2626;font-size:0.83rem;margin-bottom:4px;"></p>
+    <div class="modal-actions">
+      <button class="btn-success" onclick="simpanAssignRombelGuru()">💾 Simpan</button>
+      <button class="btn-danger"  onclick="closeModal('modalAssignRombelGuru')">✖ Batal</button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading & Toast -->
+<div id="loadingOverlay" class="loading-overlay">
+  <div class="spinner">
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+  <p>Memuat...</p>
+</div>
+<div id="toast" class="toast hidden"></div>
+
+<!-- Modal Upload Siswa -->
+<div id="modalUploadSiswa" class="modal hidden">
+  <div class="modal-content" style="max-width:520px;">
+    <h3>📤 Upload Data Siswa (Excel)</h3>
+    
+    <!-- Info Rombel Tujuan -->
+    <div style="background:#dcfce7;border:1px solid #86efac;border-radius:6px;padding:10px;margin-bottom:12px;">
+      <p id="uploadSiswaRombelInfo" style="font-size:0.88rem;font-weight:600;color:#15803d;margin:0;">
+        Rombel Tujuan: -
+      </p>
+    </div>
+
+    <div class="info-box" style="margin-bottom:16px;background:#fef2f2;border-color:#fecaca;">
+      <p style="font-size:0.85rem;font-weight:600;color:#dc2626;margin-bottom:6px;">⚠️ PENTING:</p>
+      <ul style="font-size:0.83rem;color:#555;margin:0;padding-left:20px;">
+        <li>Pilih <strong>rombel tujuan</strong> terlebih dahulu di halaman Data Siswa</li>
+        <li>Download template untuk rombel tersebut (tombol 📥 Template)</li>
+        <li>Isi data siswa di file Excel</li>
+        <li>Upload file - siswa akan masuk ke rombel yang dipilih</li>
+      </ul>
+    </div>
+
+    <div class="info-box" style="margin-bottom:16px;">
+      <p style="font-size:0.85rem;font-weight:600;margin-bottom:4px;">📋 Format File:</p>
+      <p style="font-size:0.83rem;margin:0;">Upload file <strong>.xlsx</strong> sesuai template. Kolom: <strong>NISN, No Induk, Nama Siswa, Nama Panggilan, Tempat Lahir, Tanggal Lahir, Nama Orang Tua</strong></p>
+      <p style="font-size:0.83rem;margin-top:6px;color:#555;">Tanggal Lahir isi sebagai teks format <code>YYYY-MM-DD</code> (contoh: 2010-05-17) atau format tanggal Excel biasa.</p>
+    </div>
+
+    <div class="form-group" style="margin-bottom:8px;">
+      <label>Pilih file Excel (.xlsx / .xls)</label>
+      <input type="file" id="xlsSiswaFile" accept=".xlsx,.xls" style="padding:6px;"/>
+    </div>
+    <div id="xlsSiswaPreview" style="margin-bottom:12px;"></div>
+    <div class="modal-actions">
+      <button class="btn-warning" onclick="previewXlsSiswa()">👁️ Preview</button>
+      <button class="btn-success" id="btnImportSiswa" onclick="importXlsSiswa()" disabled>✅ Import</button>
+      <button class="btn-danger"  onclick="closeModal('modalUploadSiswa')">✖ Batal</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Upload Nilai -->
+<div id="modalUploadNilai" class="modal hidden">
+  <div class="modal-content" style="max-width:560px;">
+    <h3>📤 Upload Rekap Nilai (Excel)</h3>
+    <div class="info-box" style="margin-bottom:16px;">
+      <p style="font-size:0.85rem;">Upload file <strong>.xlsx</strong> sesuai template. Kolom pertama <strong>Nama Siswa</strong>, lalu kolom nilai tiap mata pelajaran, diakhiri <strong>Sakit, Ijin, Alpa</strong>.</p>
+      <p style="font-size:0.83rem;margin-top:6px;color:#555;">Gunakan tombol <strong>📥 Template</strong> untuk mengunduh template yang sudah berisi nama siswa dan mata pelajaran.</p>
+    </div>
+    <div class="form-group" style="margin-bottom:8px;">
+      <label>Pilih file Excel (.xlsx / .xls)</label>
+      <input type="file" id="xlsNilaiFile" accept=".xlsx,.xls" style="padding:6px;"/>
+    </div>
+    <div id="xlsNilaiPreview" style="margin-bottom:12px;"></div>
+    <div class="modal-actions">
+      <button class="btn-warning" onclick="previewXlsNilai()">👁️ Preview</button>
+      <button class="btn-success" id="btnImportNilai" onclick="importXlsNilai()" disabled>✅ Import</button>
+      <button class="btn-danger"  onclick="closeModal('modalUploadNilai')">✖ Batal</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/setting.js"></script>
+<script src="js/siswa.js"></script>
+<script src="js/nilai.js"></script>
+<script src="js/ekskul.js"></script>
+<script src="js/kkm.js"></script>
+<script src="js/cetak.js"></script>
+<script src="js/upload.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/profil.js"></script>
+</body>
+</html>
