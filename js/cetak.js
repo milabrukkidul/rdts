@@ -257,14 +257,17 @@ function renderRapor() {
     </div>
 
     <div class="rapor-identitas">
-      <table>
-        <tr><td>N a m a</td><td>:</td><td><strong>${s.nama || ''}</strong></td></tr>
-        <tr><td>Tempat, Tanggal Lahir</td><td>:</td><td>${ttl}</td></tr>
-        <tr><td>Nama Orang Tua</td><td>:</td><td>${s.namaOrtu || ''}</td></tr>
-        <tr><td>Nomor Induk</td><td>:</td><td>${s.noInduk || ''}</td></tr>
-        <tr><td>NISN</td><td>:</td><td>${s.nisn || ''}</td></tr>
-        <tr><td>Rombel</td><td>:</td><td>${namaRombel}</td></tr>
-      </table>
+      <div class="rapor-identitas-row">
+        <table class="rapor-identitas-left">
+          <tr><td>N a m a</td><td>:</td><td><strong>${s.nama || ''}</strong></td></tr>
+          <tr><td>Tempat, Tanggal Lahir</td><td>:</td><td>${ttl}</td></tr>
+          <tr><td>Nama Orang Tua</td><td>:</td><td>${s.namaOrtu || ''}</td></tr>
+        </table>
+        <table class="rapor-identitas-right">
+          <tr><td>No. Induk / NISN</td><td>:</td><td>${s.noInduk || '-'} / ${s.nisn || '-'}</td></tr>
+          <tr><td>Rombel</td><td>:</td><td>${namaRombel}</td></tr>
+        </table>
+      </div>
     </div>
 
     <div class="rapor-section-title">A. NILAI MATA PELAJARAN</div>
