@@ -130,7 +130,7 @@ function getActiveRombelId(page) {
 // Isi semua selector rombel admin dengan daftar rombel dari cache
 function populateAdminRombelSelectors() {
   if (!currentUser || currentUser.role !== 'admin') return;
-  const pages = ['setting','siswa','nilai','ekskul','kkm','cetak'];
+  const pages = ['siswa','nilai','ekskul','kkm','cetak'];
   pages.forEach(page => {
     const bar = document.getElementById(`adminRombelBar-${page}`);
     const sel = document.getElementById(`adminRombelSelect-${page}`);
@@ -151,7 +151,7 @@ function populateAdminRombelSelectors() {
 // Sembunyikan selector rombel untuk wali kelas (mereka otomatis pakai rombel yang di-assign)
 function hideRombelSelectorsForWaliKelas() {
   if (!currentUser || currentUser.role !== 'walikelas') return;
-  const pages = ['siswa','nilai','ekskul','cetak'];
+  const pages = ['siswa','nilai','ekskul','kkm','cetak'];
   pages.forEach(page => {
     const bar = document.getElementById(`adminRombelBar-${page}`);
     if (bar) bar.classList.add('hidden');

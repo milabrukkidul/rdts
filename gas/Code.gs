@@ -174,8 +174,8 @@ function handleAction_(body) {
       case 'getNilai':      return R(requireNilai(body.token, body.kelasId, () => getNilai_(body.kelasId)));
       case 'getEkskul':     return R(requireRombel(body.token, body.kelasId, () => getEkskul_(body.kelasId)));
       
-      // ── KKM (admin only) ──
-      case 'getKKM':        return R(requireAdmin(body.token, () => getKKM_(body.kelasId)));
+      // ── KKM (admin & wali kelas bisa akses) ──
+      case 'getKKM':        return R(requireRombel(body.token, body.kelasId, () => getKKM_(body.kelasId)));
       
       // ── Admin write ──
       case 'saveUser':      return R(requireAdmin(body.token, () => saveUser_(body)));
@@ -193,8 +193,8 @@ function handleAction_(body) {
       case 'saveNilai':     return R(requireNilai(body.token, body.kelasId, () => saveNilai_(body)));
       case 'saveEkskul':    return R(requireRombel(body.token, body.kelasId, () => saveEkskul_(body)));
       
-      // ── KKM write (admin only) ──
-      case 'saveKKM':       return R(requireAdmin(body.token, () => saveKKM_(body)));
+      // ── KKM write (admin & wali kelas bisa edit) ──
+      case 'saveKKM':       return R(requireRombel(body.token, body.kelasId, () => saveKKM_(body)));
 
       // ── Pengumuman ──
       case 'getAnnouncements':  return R(verifyToken(body.token) ? getAnnouncements_() : { error: 'Akses ditolak' });
