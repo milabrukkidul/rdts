@@ -45,7 +45,7 @@ a { color: #2563eb; }
 .sidebar {
   width: 240px;
   min-height: 100vh;
-  background: linear-gradient(180deg, #1e3a5f 0%, #162d4a 100%);
+  background: linear-gradient(180deg, #1e3a5f 0%, #179500 100%);
   color: #fff;
   display: flex;
   flex-direction: column;
