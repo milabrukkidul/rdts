@@ -101,21 +101,21 @@ function buildNavbar() {
     pages.push({ id: 'siswa',     icon: '👤', label: 'Data Siswa' });
     pages.push({ id: 'nilai',     icon: '📊', label: 'Rekap Nilai' });
     pages.push({ id: 'ekskul',    icon: '🏆', label: 'Ekskul' });
-    pages.push({ id: 'kkm',       icon: '📌', label: 'KKM' });
+    pages.push({ id: 'kkm',       icon: '🎯', label: 'KKM' });
     pages.push({ id: 'cetak',     icon: '🖨️', label: 'Cetak Rapor' });
-    pages.push({ id: 'profil',    icon: '👤', label: 'Profil Saya' });
+    pages.push({ id: 'profil',    icon: '👔', label: 'Profil Saya' });
   } else if (role === 'walikelas') {
     pages.push({ id: 'dashboard', icon: '🏠', label: 'Dashboard' });
     pages.push({ id: 'siswa',     icon: '👤', label: 'Data Siswa' });
     pages.push({ id: 'nilai',     icon: '📊', label: 'Rekap Nilai' });
     pages.push({ id: 'ekskul',    icon: '🏆', label: 'Ekskul' });
-    pages.push({ id: 'kkm',       icon: '📌', label: 'KKM' });
+    pages.push({ id: 'kkm',       icon: '🎯', label: 'KKM' });
     pages.push({ id: 'cetak',     icon: '🖨️', label: 'Cetak Rapor' });
-    pages.push({ id: 'profil',    icon: '👤', label: 'Profil Saya' });
+    pages.push({ id: 'profil',    icon: '👔', label: 'Profil Saya' });
   } else {
     pages.push({ id: 'dashboard', icon: '🏠', label: 'Dashboard' });
     pages.push({ id: 'nilai',     icon: '📊', label: 'Rekap Nilai' });
-    pages.push({ id: 'profil',    icon: '👤', label: 'Profil Saya' });
+    pages.push({ id: 'profil',    icon: '👔', label: 'Profil Saya' });
   }
 
   pages.forEach(p => {
