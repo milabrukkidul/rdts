@@ -103,6 +103,7 @@ function buildNavbar() {
     pages.push({ id: 'ekskul',    icon: '🏆', label: 'Ekskul' });
     pages.push({ id: 'kkm',       icon: '🎯', label: 'KKM' });
     pages.push({ id: 'cetak',     icon: '🖨️', label: 'Cetak Rapor' });
+    pages.push({ id: 'leger',     icon: '📋', label: 'Cetak Leger' });
     pages.push({ id: 'profil',    icon: '👔', label: 'Profil Saya' });
   } else if (role === 'walikelas') {
     pages.push({ id: 'dashboard', icon: '🏠', label: 'Dashboard' });
@@ -111,6 +112,7 @@ function buildNavbar() {
     pages.push({ id: 'ekskul',    icon: '🏆', label: 'Ekskul' });
     pages.push({ id: 'kkm',       icon: '🎯', label: 'KKM' });
     pages.push({ id: 'cetak',     icon: '🖨️', label: 'Cetak Rapor' });
+    pages.push({ id: 'leger',     icon: '📋', label: 'Cetak Leger' });
     pages.push({ id: 'profil',    icon: '👔', label: 'Profil Saya' });
   } else {
     pages.push({ id: 'dashboard', icon: '🏠', label: 'Dashboard' });

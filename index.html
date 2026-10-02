@@ -458,6 +458,23 @@
     <div id="raporPreview"></div>
   </div>
 
+  <!-- ===== CETAK LEGER ===== -->
+  <div id="page-leger" class="page">
+    <div id="adminRombelBar-leger" class="admin-kelas-bar hidden no-print">
+      <label>🏫 Rombel:</label>
+      <select id="adminRombelSelect-leger" onchange="loadLegerData()"></select>
+    </div>
+    <div class="page-header no-print">
+      <h2>📋 Cetak Leger</h2>
+      <div class="btn-group">
+        <button class="btn-primary" onclick="loadLegerData()">🔄 Muat</button>
+        <button class="btn-warning" onclick="exportLegerExcel()">📊 Export Excel</button>
+        <button class="btn-success" onclick="cetakLeger()">🖨️ Print</button>
+      </div>
+    </div>
+    <div id="legerPreview"></div>
+  </div>
+
     </main>
   </div><!-- end .app-wrapper -->
 
@@ -674,6 +691,7 @@
 <script src="js/ekskul.js"></script>
 <script src="js/kkm.js"></script>
 <script src="js/cetak.js"></script>
+<script src="js/leger.js"></script>
 <script src="js/upload.js"></script>
 <script src="js/dashboard.js"></script>
 <script src="js/profil.js"></script>

@@ -1,8 +1,14 @@
 /* ===== PRINT STYLES - A4 FULL PAGE ===== */
 @media print {
+  /* Default untuk rapor - portrait */
   @page {
     size: A4 portrait;
     margin: 8mm 10mm 8mm 10mm;
+  }
+
+  /* Hide all pages except active one */
+  .page:not(.active) {
+    display: none !important;
   }
 
   /* Sembunyikan semua UI */
@@ -15,21 +21,13 @@
   .btn-group,
   #loadingOverlay,
   #toast,
-  #loginScreen,
-  #page-admin,
-  #page-setting,
-  #page-siswa,
-  #page-nilai,
-  #page-ekskul,
-  #page-kkm,
-  #page-dashboard,
-  #page-profil { display: none !important; }
+  #loginScreen { display: none !important; }
 
-  /* Tampilkan hanya halaman cetak */
+  /* Tampilkan hanya halaman cetak rapor */
   body { background: #fff !important; margin: 0; padding: 0; }
   .app-wrapper { margin-left: 0 !important; }
   #mainApp { display: block !important; }
-  #page-cetak { display: block !important; padding: 0 !important; }
+  #page-cetak.active { display: block !important; padding: 0 !important; }
   #raporPreview {
     box-shadow: none !important;
     border-radius: 0 !important;
@@ -129,4 +127,247 @@
   .rapor-divider { border-top: 3px double #000 !important; }
   /* Subheader muatan lokal saat print */
   .rapor-nilai-table tr td[colspan="6"] { background: #ddd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+
+/* ===== PRINT STYLES FOR LEGER - A4 LANDSCAPE ===== */
+@media print {
+  /* Hide all pages by default when printing */
+  .page {
+    display: none !important;
+  }
+
+  /* Show only active leger page */
+  #page-leger.active {
+    display: block !important;
+  }
+
+  /* Override page size untuk leger */
+  @page {
+    size: A4 landscape;
+    margin: 5mm 4mm;
+  }
+
+  /* Sembunyikan halaman lain saat print leger */
+  body:has(#page-leger.active) #page-cetak { display: none !important; }
+  body:has(#page-leger.active) #page-admin { display: none !important; }
+  body:has(#page-leger.active) #page-setting { display: none !important; }
+  body:has(#page-leger.active) #page-siswa { display: none !important; }
+  body:has(#page-leger.active) #page-nilai { display: none !important; }
+  body:has(#page-leger.active) #page-ekskul { display: none !important; }
+  body:has(#page-leger.active) #page-kkm { display: none !important; }
+  body:has(#page-leger.active) #page-dashboard { display: none !important; }
+  body:has(#page-leger.active) #page-profil { display: none !important; }
+  
+  #page-leger { padding: 0 !important; }
+  
+  #legerPreview {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+
+  /* Leger specific styles */
+  .leger-page {
+    width: 100%;
+    max-width: none;
+    font-size: 7.5pt;
+    line-height: 1.1;
+    color: #000 !important;
+    page-break-inside: auto;
+    padding: 5mm 4mm;
+  }
+
+  .leger-kop-img {
+    max-height: 50px;
+  }
+
+  .leger-kop-text h2 {
+    font-size: 12pt;
+  }
+
+  .leger-judul h3 {
+    font-size: 11pt;
+  }
+
+  .leger-header-info {
+    font-size: 7.5pt;
+    margin-bottom: 8px;
+    display: flex !important;
+    gap: 20px !important;
+    flex-direction: row !important;
+  }
+
+  .leger-info-left,
+  .leger-info-right {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+  }
+
+  .leger-info-left {
+    text-align: left !important;
+  }
+
+  .leger-info-right {
+    text-align: right !important;
+  }
+
+  .leger-info-row {
+    display: flex !important;
+    gap: 6px !important;
+    align-items: baseline !important;
+  }
+
+  .leger-info-left .leger-info-row {
+    justify-content: flex-start !important;
+  }
+
+  .leger-info-right .leger-info-row {
+    justify-content: flex-end !important;
+  }
+
+  .leger-info-label {
+    font-weight: 600 !important;
+    min-width: 90px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .leger-info-left .leger-info-label {
+    text-align: left !important;
+  }
+
+  .leger-info-right .leger-info-label {
+    text-align: right !important;
+  }
+
+  .leger-info-colon {
+    flex-shrink: 0 !important;
+  }
+
+  .leger-info-value {
+    font-weight: normal !important;
+    flex: 1 !important;
+  }
+
+  .leger-info-left .leger-info-value {
+    text-align: left !important;
+  }
+
+  .leger-info-right .leger-info-value {
+    text-align: right !important;
+  }
+
+  /* Footer layout */
+  .leger-footer {
+    display: flex !important;
+    justify-content: space-between !important;
+    page-break-inside: avoid;
+    font-size: 7.5pt;
+    margin-top: 10px;
+  }
+
+  .leger-ttd-section {
+    text-align: center !important;
+    min-width: 150px !important;
+    flex: 1 !important;
+  }
+
+  .leger-ttd-section p {
+    margin: 0 0 2px !important;
+  }
+
+  .leger-table {
+    width: 100%;
+    font-size: 6.5pt;
+    line-height: 1;
+    page-break-inside: auto;
+  }
+
+  .leger-table thead {
+    display: table-header-group;
+  }
+
+  .leger-table tbody {
+    display: table-row-group;
+  }
+
+  .leger-table tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  .leger-table th {
+    background: #ccc !important;
+    color: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    padding: 2px 1px;
+  }
+
+  .leger-table td {
+    padding: 2px 1px;
+  }
+
+  .leger-table tbody tr:nth-child(even) {
+    background: #f5f5f5 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .leger-ttd-space {
+    height: 40px !important;
+  }
+
+  /* Ensure proper box-sizing */
+  .leger-page,
+  .leger-page * {
+    box-sizing: border-box !important;
+  }
+
+  /* Force display properties */
+  .leger-header-info,
+  .leger-info-left,
+  .leger-info-right,
+  .leger-info-row,
+  .leger-footer,
+  .leger-ttd-section {
+    display: flex !important;
+  }
+
+  /* Prevent text overflow */
+  .leger-info-label,
+  .leger-info-value {
+    overflow: visible !important;
+    white-space: normal !important;
+  }
+
+  /* Predikat colors for leger */
+  .predikat-A { 
+    background: #d4edda !important; 
+    color: #155724 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .predikat-B { 
+    background: #d1ecf1 !important; 
+    color: #0c5460 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .predikat-C { 
+    background: #fff3cd !important; 
+    color: #856404 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .predikat-D { 
+    background: #f8d7da !important; 
+    color: #721c24 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }

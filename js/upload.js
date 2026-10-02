@@ -132,6 +132,12 @@ function bacaExcel(file, callback) {
 // ═══════════════════════════════════════════════════════════
 
 function downloadTemplateSiswa() {
+  // Hanya admin yang boleh download template siswa
+  if (currentUser && currentUser.role !== 'admin') {
+    showToast('Hanya admin yang dapat mendownload template siswa!', 'error');
+    return;
+  }
+  
   const rombelId = getActiveRombelId('siswa');
   if (!rombelId) {
     showToast('Pilih rombel terlebih dahulu sebelum download template!', 'error');
@@ -203,6 +209,12 @@ function downloadTemplateSiswa() {
 let xlsSiswaParsed = [];
 
 function showModalUploadSiswa() {
+  // Hanya admin yang boleh upload siswa
+  if (currentUser && currentUser.role !== 'admin') {
+    showToast('Hanya admin yang dapat mengupload data siswa!', 'error');
+    return;
+  }
+  
   const rombelId = getActiveRombelId('siswa');
   if (!rombelId) {
     showToast('Pilih rombel terlebih dahulu sebelum upload!', 'error');

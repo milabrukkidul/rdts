@@ -11,6 +11,9 @@ async function loadSiswa() {
     warning.style.display = !rombelId ? 'block' : 'none';
   }
   
+  // Sembunyikan tombol untuk wali kelas
+  updateSiswaButtonsVisibility();
+  
   if (!rombelId) {
     // Jika admin belum pilih rombel, tampilkan pesan tanpa error
     if (currentUser && currentUser.role === 'admin') {
@@ -36,8 +39,24 @@ async function loadSiswa() {
   }
 }
 
+// Update visibility tombol berdasarkan role
+function updateSiswaButtonsVisibility() {
+  const isAdmin = currentUser && currentUser.role === 'admin';
+  
+  // Sembunyikan tombol Tambah Siswa, Upload Excel, dan Template untuk wali kelas
+  const btnTambahSiswa = document.querySelector('#page-siswa .page-header .btn-success');
+  const btnUploadExcel = document.querySelector('#page-siswa .page-header .btn-warning');
+  const btnTemplate = document.getElementById('btnTemplateSiswa');
+  
+  if (btnTambahSiswa) btnTambahSiswa.style.display = isAdmin ? '' : 'none';
+  if (btnUploadExcel) btnUploadExcel.style.display = isAdmin ? '' : 'none';
+  if (btnTemplate) btnTemplate.style.display = isAdmin ? '' : 'none';
+}
+
 function renderTabelSiswa(list) {
   const tbody = document.getElementById('bodySiswa');
+  const isAdmin = currentUser && currentUser.role === 'admin';
+  
   tbody.innerHTML = '';
   if (!list.length) {
     tbody.innerHTML = '<tr><td colspan="9" class="hint">Belum ada data siswa.</td></tr>';
@@ -45,6 +64,12 @@ function renderTabelSiswa(list) {
   }
   list.forEach((s, i) => {
     const tr = document.createElement('tr');
+    // Tombol edit dan hapus hanya untuk admin
+    const aksiButtons = isAdmin ? `
+      <button class="btn-warning" onclick="editSiswa(${i})" style="padding:3px 8px;font-size:0.78rem;">✏️</button>
+      <button class="btn-danger"  onclick="hapusSiswa(${i})" style="padding:3px 8px;font-size:0.78rem;margin-left:4px;">🗑️</button>
+    ` : '-';
+    
     tr.innerHTML = `
       <td>${i+1}</td>
       <td>${s.nisn||''}</td>
@@ -54,15 +79,17 @@ function renderTabelSiswa(list) {
       <td>${s.tempatLahir||''}</td>
       <td>${formatTanggal(s.tglLahir)}</td>
       <td>${s.namaOrtu||''}</td>
-      <td>
-        <button class="btn-warning" onclick="editSiswa(${i})" style="padding:3px 8px;font-size:0.78rem;">✏️</button>
-        <button class="btn-danger"  onclick="hapusSiswa(${i})" style="padding:3px 8px;font-size:0.78rem;margin-left:4px;">🗑️</button>
-      </td>`;
+      <td>${aksiButtons}</td>`;
     tbody.appendChild(tr);
   });
 }
 
 function tambahSiswa() {
+  // Hanya admin yang boleh tambah siswa
+  if (currentUser && currentUser.role !== 'admin') {
+    showToast('Hanya admin yang dapat menambah siswa!', 'error');
+    return;
+  }
   document.getElementById('modalSiswaTitle').textContent = 'Tambah Siswa';
   document.getElementById('ms_rowIndex').value = '-1';
   ['ms_nisn','ms_noInduk','ms_nama','ms_panggilan','ms_tempatLahir','ms_tglLahir','ms_namaOrtu']
@@ -71,6 +98,11 @@ function tambahSiswa() {
 }
 
 function editSiswa(idx) {
+  // Hanya admin yang boleh edit siswa
+  if (currentUser && currentUser.role !== 'admin') {
+    showToast('Hanya admin yang dapat mengedit siswa!', 'error');
+    return;
+  }
   const s = siswaCacheList[idx];
   document.getElementById('modalSiswaTitle').textContent = 'Edit Siswa';
   document.getElementById('ms_rowIndex').value   = idx;
@@ -107,6 +139,11 @@ async function simpanSiswa() {
 }
 
 async function hapusSiswa(idx) {
+  // Hanya admin yang boleh hapus siswa
+  if (currentUser && currentUser.role !== 'admin') {
+    showToast('Hanya admin yang dapat menghapus siswa!', 'error');
+    return;
+  }
   if (!confirm('Hapus data siswa ini?')) return;
   const rombelId = getActiveRombelId('siswa');
   if (!rombelId) return;
