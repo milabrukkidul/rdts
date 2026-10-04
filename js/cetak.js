@@ -346,5 +346,15 @@ function renderRapor() {
 function cetakRapor() {
   const idx = document.getElementById('selectSiswa').value;
   if (idx === '') { showToast('Pilih siswa terlebih dahulu!', 'error'); return; }
+  
+  // Add print-rapor class to body untuk force portrait
+  document.body.classList.add('print-rapor');
+  document.body.classList.remove('print-leger');
+  
   window.print();
+  
+  // Remove class setelah print
+  setTimeout(() => {
+    document.body.classList.remove('print-rapor');
+  }, 100);
 }

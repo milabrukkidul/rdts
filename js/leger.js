@@ -238,7 +238,17 @@ function cetakLeger() {
     showToast('Muat data leger terlebih dahulu!', 'error');
     return;
   }
+  
+  // Add print-leger class to body untuk force landscape
+  document.body.classList.add('print-leger');
+  document.body.classList.remove('print-rapor');
+  
   window.print();
+  
+  // Remove class setelah print
+  setTimeout(() => {
+    document.body.classList.remove('print-leger');
+  }, 100);
 }
 
 // Export leger ke Excel (tanpa tanda tangan)

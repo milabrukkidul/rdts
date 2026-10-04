@@ -401,7 +401,12 @@
         <button class="btn-warning" onclick="showModalUploadNilai()">📤 Upload Excel</button>
         <a class="btn-warning" style="padding:7px 14px;border-radius:6px;font-size:0.83rem;font-weight:600;text-decoration:none;cursor:pointer;" onclick="downloadTemplateNilai()">📥 Template .xlsx</a>
         <button class="btn-success" onclick="saveNilai()">💾 Simpan</button>
+        <button id="btnKunciNilai" class="btn-primary" onclick="toggleKunciNilai()" style="display:none;">🔓 Kunci Nilai</button>
       </div>
+    </div>
+    <div id="nilaiLockStatus" class="info-box" style="display:none;margin-bottom:12px;background:#fef2f2;border-color:#fecaca;">
+      <p style="font-size:0.88rem;font-weight:600;color:#dc2626;margin-bottom:4px;">🔒 Nilai Terkunci</p>
+      <p style="font-size:0.83rem;color:#555;margin:0;">Nilai telah dikunci dan siap untuk dicetak. Klik tombol "Buka Kunci" untuk mengedit kembali.</p>
     </div>
     <div id="nilaiContainer" class="table-wrapper"><p class="hint">Memuat data nilai...</p></div>
   </div>
