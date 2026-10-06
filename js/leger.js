@@ -213,17 +213,17 @@ function renderLeger() {
     <div class="leger-footer">
       <div class="leger-ttd-section">
         <p>${setting.tempatRapor || ''}, ${formatTanggal(setting.tglRapor) || '....................'}</p>
-        <p style="margin-top:2px;">Wali Kelas</p>
+        <p>Wali Kelas</p>
         <div class="leger-ttd-space"></div>
-        <p style="font-weight:bold;border-top:1px solid #000;padding-top:2px;display:inline-block;min-width:140px;">
+        <p class="leger-ttd-name">
           ${namaWali ? namaWali : '( ................... )'}
         </p>
       </div>
       <div class="leger-ttd-section">
         <p>Mengetahui,</p>
-        <p style="margin-top:2px;">Kepala Madrasah</p>
+        <p>Kepala Madrasah</p>
         <div class="leger-ttd-space"></div>
-        <p style="font-weight:bold;border-top:1px solid #000;padding-top:2px;display:inline-block;min-width:140px;">
+        <p class="leger-ttd-name">
           ${setting.namaKepala ? setting.namaKepala : '( ................... )'}
         </p>
       </div>

@@ -1020,11 +1020,13 @@ td textarea { min-width: 140px; resize: vertical; }
   justify-content: space-between;
   margin-top: 12px;
   font-size: 8pt;
+  page-break-inside: avoid;
 }
 
 .leger-ttd-section {
   text-align: center;
   min-width: 150px;
+  flex: 1;
 }
 
 .leger-ttd-section p {
@@ -1032,7 +1034,17 @@ td textarea { min-width: 140px; resize: vertical; }
 }
 
 .leger-ttd-space {
-  height: 45px;
+  height: 40px;
+  margin: 4px 0;
+}
+
+.leger-ttd-name {
+  font-weight: bold;
+  border-top: 1px solid #000;
+  padding-top: 2px;
+  margin-top: 2px;
+  display: inline-block;
+  min-width: 140px;
 }
 
 @media print {

@@ -1,6 +1,54 @@
 // ===== DATA SISWA (per rombel) =====
 
 let siswaCacheList = [];
+let siswaDataCache = {}; // Cache untuk data siswa per rombel
+
+// Local storage cache key
+const SISWA_CACHE_KEY = 'rdts_siswa_cache';
+const SISWA_CACHE_EXPIRY = 30 * 60 * 1000; // 30 menit
+
+// Load cache from localStorage
+function loadSiswaCache() {
+  try {
+    const cached = localStorage.getItem(SISWA_CACHE_KEY);
+    if (cached) {
+      const data = JSON.parse(cached);
+      // Cek expiry
+      if (data.timestamp && (Date.now() - data.timestamp < SISWA_CACHE_EXPIRY)) {
+        siswaDataCache = data.cache || {};
+        console.log('Siswa cache loaded from localStorage:', Object.keys(siswaDataCache).length, 'rombel');
+        return true;
+      } else {
+        // Cache expired, hapus
+        localStorage.removeItem(SISWA_CACHE_KEY);
+      }
+    }
+  } catch(e) {
+    console.warn('Error loading siswa cache:', e);
+  }
+  return false;
+}
+
+// Save cache to localStorage
+function saveSiswaCache() {
+  try {
+    const data = {
+      timestamp: Date.now(),
+      cache: siswaDataCache
+    };
+    localStorage.setItem(SISWA_CACHE_KEY, JSON.stringify(data));
+    console.log('Siswa cache saved to localStorage');
+  } catch(e) {
+    console.warn('Error saving siswa cache:', e);
+  }
+}
+
+// Clear cache
+function clearSiswaCache() {
+  siswaDataCache = {};
+  localStorage.removeItem(SISWA_CACHE_KEY);
+  showToast('Cache siswa dibersihkan!', 'info');
+}
 
 async function loadSiswa() {
   const rombelId = getActiveRombelId('siswa');
@@ -24,6 +72,20 @@ async function loadSiswa() {
     return;
   }
   
+  // Load cache dari localStorage
+  loadSiswaCache();
+  
+  // Cek apakah data sudah ada di cache
+  if (siswaDataCache[rombelId]) {
+    const cached = siswaDataCache[rombelId];
+    siswaCacheList = cached.siswa || [];
+    renderTabelSiswa(siswaCacheList);
+    showToast('Data siswa dimuat dari cache! 💾', 'success');
+    console.log('Loaded from cache:', rombelId, siswaCacheList.length, 'siswa');
+    return;
+  }
+  
+  // Jika tidak ada cache, fetch dari server
   try {
     const data = await API.call('getSiswa', { kelasId: rombelId });
     if (data.error) {
@@ -31,8 +93,16 @@ async function loadSiswa() {
       return;
     }
     siswaCacheList = data.siswa || [];
+    
+    // Simpan ke cache
+    siswaDataCache[rombelId] = {
+      siswa: siswaCacheList,
+      timestamp: Date.now()
+    };
+    saveSiswaCache();
+    
     renderTabelSiswa(siswaCacheList);
-    showToast('Data siswa dimuat!', 'success');
+    showToast('Data siswa dimuat! 🌐', 'success');
   } catch(e) {
     showToast('Error memuat data siswa: ' + e.message, 'error');
     console.error('Error loadSiswa:', e);
@@ -172,6 +242,11 @@ async function simpanSiswa() {
   try {
     await API.post('saveSiswa', { kelasId: rombelId, siswa: JSON.stringify(siswa), rowIndex: idx });
     closeModal('modalSiswa');
+    
+    // Hapus cache untuk rombel ini karena data berubah
+    delete siswaDataCache[rombelId];
+    saveSiswaCache();
+    
     showToast('Data siswa disimpan!', 'success');
     await loadSiswa();
   } catch(e) {}
@@ -188,6 +263,11 @@ async function hapusSiswa(idx) {
   if (!rombelId) return;
   try {
     await API.post('deleteSiswa', { kelasId: rombelId, rowIndex: idx });
+    
+    // Hapus cache untuk rombel ini karena data berubah
+    delete siswaDataCache[rombelId];
+    saveSiswaCache();
+    
     showToast('Data siswa dihapus!', 'success');
     await loadSiswa();
   } catch(e) {}

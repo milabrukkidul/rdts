@@ -321,6 +321,20 @@
   .leger-ttd-section p {
     margin: 0 0 2px !important;
   }
+  
+  .leger-ttd-space {
+    height: 40px !important;
+    margin: 4px 0 !important;
+  }
+  
+  .leger-ttd-name {
+    font-weight: bold !important;
+    border-top: 1px solid #000 !important;
+    padding-top: 2px !important;
+    margin-top: 2px !important;
+    display: inline-block !important;
+    min-width: 140px !important;
+  }
 
   .leger-table {
     width: 100%;
@@ -358,10 +372,6 @@
     background: #f5f5f5 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-  }
-
-  .leger-ttd-space {
-    height: 40px !important;
   }
 
   /* Ensure proper box-sizing */
