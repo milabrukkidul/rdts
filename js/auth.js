@@ -100,6 +100,7 @@ function buildNavbar() {
     pages.push({ id: 'setting',   icon: '⚙️', label: 'Setting' });
     pages.push({ id: 'siswa',     icon: '👤', label: 'Data Siswa' });
     pages.push({ id: 'nilai',     icon: '📊', label: 'Rekap Nilai' });
+    pages.push({ id: 'progress',  icon: '📈', label: 'Progress Nilai' });
     pages.push({ id: 'ekskul',    icon: '🏆', label: 'Ekskul' });
     pages.push({ id: 'kkm',       icon: '🎯', label: 'KKM' });
     pages.push({ id: 'cetak',     icon: '🖨️', label: 'Cetak Rapor' });
@@ -176,5 +177,84 @@ async function buildGuruKelasSelector() {
       sel.value = rombelList[0];
       loadNilai();
     }
+  }
+}
+
+
+// Load progress sidebar untuk admin
+async function loadSidebarProgress() {
+  const nav = document.getElementById('navLinks');
+  if (!nav) return;
+  
+  // Buat container progress
+  let progressDiv = document.getElementById('sidebar-progress');
+  if (!progressDiv) {
+    progressDiv = document.createElement('div');
+    progressDiv.id = 'sidebar-progress';
+    progressDiv.className = 'sidebar-progress';
+    nav.appendChild(progressDiv);
+  }
+  
+  progressDiv.innerHTML = '<div class="sidebar-progress-title">📊 Progress Nilai</div><div class="sidebar-progress-loading">Memuat...</div>';
+  
+  try {
+    const rombelRes = await API.call('getRombel', {}, true); // Use cache
+    const rombelList = rombelRes.rombel || [];
+    
+    if (!rombelList.length) {
+      progressDiv.innerHTML = '<div class="sidebar-progress-title">📊 Progress Nilai</div><p style="font-size:0.75rem;color:rgba(255,255,255,0.6);padding:8px;">Belum ada rombel</p>';
+      return;
+    }
+    
+    // Ambil data nilai untuk setiap rombel (parallel) with cache
+    const nilaiPromises = rombelList.map(r => 
+      API.call('getNilai', { kelasId: r.id }, true).catch(() => ({ mapel: [], nilai: [] }))
+    );
+    const nilaiResults = await Promise.all(nilaiPromises);
+    
+    let html = '<div class="sidebar-progress-title">📊 Progress Nilai</div>';
+    
+    rombelList.forEach((r, i) => {
+      const nilaiData = nilaiResults[i];
+      const mapel = nilaiData.mapel || [];
+      const nilai = nilaiData.nilai || [];
+      
+      if (!mapel.length || !nilai.length) {
+        html += `<div class="sidebar-progress-item">
+          <div class="sidebar-progress-label">${r.nama || r.id}</div>
+          <div class="sidebar-progress-bar"><div class="sidebar-progress-fill" style="width:0%"></div></div>
+          <div class="sidebar-progress-text">0%</div>
+        </div>`;
+        return;
+      }
+      
+      // Hitung persentase nilai terisi
+      let totalCells = nilai.length * mapel.length;
+      let filledCells = 0;
+      
+      nilai.forEach(nilaiRow => {
+        mapel.forEach((m, mi) => {
+          if (nilaiRow && nilaiRow[mi] !== undefined && nilaiRow[mi] !== '') {
+            filledCells++;
+          }
+        });
+      });
+      
+      const percentage = totalCells > 0 ? Math.round((filledCells / totalCells) * 100) : 0;
+      const colorClass = percentage >= 90 ? 'complete' : percentage >= 50 ? 'medium' : 'low';
+      
+      html += `<div class="sidebar-progress-item">
+        <div class="sidebar-progress-label">${r.nama || r.id}</div>
+        <div class="sidebar-progress-bar">
+          <div class="sidebar-progress-fill ${colorClass}" style="width:${percentage}%"></div>
+        </div>
+        <div class="sidebar-progress-text">${percentage}%</div>
+      </div>`;
+    });
+    
+    progressDiv.innerHTML = html;
+  } catch(e) {
+    console.error('Error loading sidebar progress:', e);
+    progressDiv.innerHTML = '<div class="sidebar-progress-title">📊 Progress Nilai</div><p style="font-size:0.75rem;color:rgba(255,255,255,0.6);padding:8px;">Error memuat data</p>';
   }
 }

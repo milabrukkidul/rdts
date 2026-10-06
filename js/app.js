@@ -7,6 +7,7 @@ const PAGE_TITLES = {
   setting:   'Setting Madrasah',
   siswa:     'Data Siswa',
   nilai:     'Rekap Nilai',
+  progress:  'Progress Nilai',
   ekskul:    'Ekstrakurikuler',
   kkm:       'KKM',
   cetak:     'Cetak Rapor',
@@ -55,6 +56,8 @@ function showPage(name) {
     loadSiswa();
   } else if (name === 'nilai' && typeof loadNilai === 'function') {
     loadNilai();
+  } else if (name === 'progress' && typeof loadProgressData === 'function') {
+    loadProgressData();
   } else if (name === 'ekskul' && typeof loadEkskul === 'function') {
     loadEkskul();
   } else if (name === 'cetak' && typeof initCetakPage === 'function') {

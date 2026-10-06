@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="css/print.css" media="print" />
   <!-- SheetJS untuk baca/tulis file Excel -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <!-- html2canvas untuk export JPG -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
 </head>
 <body>
 
@@ -480,6 +482,19 @@
     <div id="legerPreview"></div>
   </div>
 
+  <!-- ===== PROGRESS NILAI ===== -->
+  <div id="page-progress" class="page">
+    <div class="page-header no-print">
+      <h2>📈 Progress Nilai</h2>
+      <div class="btn-group">
+        <button class="btn-primary" onclick="loadProgressData()">🔄 Muat</button>
+        <button class="btn-warning" onclick="exportProgressPDF()">📄 Export PDF</button>
+        <button class="btn-success" onclick="exportProgressJPG()">🖼️ Export JPG</button>
+      </div>
+    </div>
+    <div id="progressContainer"></div>
+  </div>
+
     </main>
   </div><!-- end .app-wrapper -->
 
@@ -697,6 +712,7 @@
 <script src="js/kkm.js"></script>
 <script src="js/cetak.js"></script>
 <script src="js/leger.js"></script>
+<script src="js/progress.js"></script>
 <script src="js/upload.js"></script>
 <script src="js/dashboard.js"></script>
 <script src="js/profil.js"></script>

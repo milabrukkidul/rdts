@@ -104,6 +104,8 @@ function editSiswa(idx) {
     return;
   }
   const s = siswaCacheList[idx];
+  console.log('Edit Siswa - Data asli:', s);
+  
   document.getElementById('modalSiswaTitle').textContent = 'Edit Siswa';
   document.getElementById('ms_rowIndex').value   = idx;
   document.getElementById('ms_nisn').value       = s.nisn||'';
@@ -111,7 +113,44 @@ function editSiswa(idx) {
   document.getElementById('ms_nama').value       = s.nama||'';
   document.getElementById('ms_panggilan').value  = s.panggilan||'';
   document.getElementById('ms_tempatLahir').value= s.tempatLahir||'';
-  document.getElementById('ms_tglLahir').value   = s.tglLahir||'';
+  
+  // Format tanggal untuk input type="date" (harus YYYY-MM-DD)
+  let tglLahir = s.tglLahir || '';
+  console.log('Tanggal lahir asli:', tglLahir, 'Type:', typeof tglLahir);
+  
+  if (tglLahir) {
+    // Convert string to string (hapus spasi/tab)
+    tglLahir = String(tglLahir).trim();
+    
+    // Jika format DD/MM/YYYY atau D/M/YYYY, konversi ke YYYY-MM-DD
+    if (tglLahir.includes('/')) {
+      const parts = tglLahir.split('/');
+      if (parts.length === 3) {
+        const day = parts[0].padStart(2,'0');
+        const month = parts[1].padStart(2,'0');
+        const year = parts[2];
+        tglLahir = `${year}-${month}-${day}`;
+      }
+    } 
+    // Jika sudah format YYYY-MM-DD tapi ada jam
+    else if (tglLahir.includes(' ')) {
+      tglLahir = tglLahir.split(' ')[0];
+    }
+    // Jika format timestamp Excel (angka serial date)
+    else if (!isNaN(tglLahir) && Number(tglLahir) > 1000) {
+      // Convert Excel serial date to JS date
+      const excelEpoch = new Date(1899, 11, 30);
+      const jsDate = new Date(excelEpoch.getTime() + Number(tglLahir) * 86400000);
+      const year = jsDate.getFullYear();
+      const month = String(jsDate.getMonth() + 1).padStart(2, '0');
+      const day = String(jsDate.getDate()).padStart(2, '0');
+      tglLahir = `${year}-${month}-${day}`;
+    }
+  }
+  
+  console.log('Tanggal lahir setelah konversi:', tglLahir);
+  document.getElementById('ms_tglLahir').value   = tglLahir;
+  
   document.getElementById('ms_namaOrtu').value   = s.namaOrtu||'';
   document.getElementById('modalSiswa').classList.remove('hidden');
 }

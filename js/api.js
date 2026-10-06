@@ -3,6 +3,28 @@
 //     Setelah diisi, tidak perlu diubah lagi.
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbyLLBo0pqj-DxlM2-enhOEJoznz6Gf_5RI1MYp-sf_AGdi1bBA_SWKNjlxWMsfBSfwumA/exec';
 
+// Simple cache untuk mengurangi API calls
+const API_CACHE = {
+  data: {},
+  ttl: 30000, // 30 detik
+  
+  get(key) {
+    const cached = this.data[key];
+    if (cached && Date.now() - cached.time < this.ttl) {
+      return cached.value;
+    }
+    return null;
+  },
+  
+  set(key, value) {
+    this.data[key] = { value, time: Date.now() };
+  },
+  
+  clear() {
+    this.data = {};
+  }
+};
+
 const API = {
   getUrl() {
     return localStorage.getItem('gasUrl') || GAS_URL;
@@ -17,12 +39,20 @@ const API = {
 
   // Semua request (GET & POST) dikirim sebagai POST dengan JSON body
   // agar token tidak rusak di URL (base64 mengandung +/= yang bermasalah di query string)
-  async call(action, payload = {}) {
+  async call(action, payload = {}, useCache = false) {
     const url = this.getUrl();
     if (!url || url.includes('GANTI_DENGAN')) {
       showToast('URL Apps Script belum diset!', 'error');
       throw new Error('No GAS URL');
     }
+    
+    // Check cache untuk GET-like actions
+    if (useCache) {
+      const cacheKey = action + JSON.stringify(payload);
+      const cached = API_CACHE.get(cacheKey);
+      if (cached) return cached;
+    }
+    
     showLoading(true);
     try {
       const res  = await fetch(url, {
@@ -32,6 +62,13 @@ const API = {
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
+      
+      // Cache result untuk GET-like actions
+      if (useCache) {
+        const cacheKey = action + JSON.stringify(payload);
+        API_CACHE.set(cacheKey, data);
+      }
+      
       return data;
     } catch (e) {
       showToast('Error: ' + e.message, 'error');
@@ -42,7 +79,9 @@ const API = {
   },
 
   async post(action, body = {}) {
-    return this.call(action, body);
+    // Clear cache saat POST (data berubah)
+    API_CACHE.clear();
+    return this.call(action, body, false);
   },
 
   async login(username, password) {
