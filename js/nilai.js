@@ -21,13 +21,32 @@ async function loadNilai() {
       showToast('Error: ' + data.error, 'error');
       return;
     }
-    nilaiData = data;
-    // Jika tidak ada isLocked, default false
-    if (nilaiData.isLocked === undefined) nilaiData.isLocked = false;
+    
+    // Pastikan nilaiData memiliki semua properti yang diperlukan
+    nilaiData = {
+      mapel: data.mapel || [],
+      siswa: data.siswa || [],
+      nilai: data.nilai || [],
+      mapelGuru: data.mapelGuru || {},
+      isLocked: data.isLocked !== undefined ? data.isLocked : false
+    };
+    
+    console.log('Nilai data loaded:', {
+      kelasId: rombelId,
+      isLocked: nilaiData.isLocked,
+      mapelCount: nilaiData.mapel.length,
+      siswaCount: nilaiData.siswa.length
+    });
     
     renderTabelNilai();
     updateKunciNilaiUI();
-    showToast('Data nilai dimuat!', 'success');
+    
+    // Tampilkan peringatan jika nilai terkunci
+    if (nilaiData.isLocked) {
+      showToast('⚠️ Nilai terkunci! Tidak dapat diedit.', 'warning');
+    } else {
+      showToast('Data nilai dimuat!', 'success');
+    }
   } catch(e) {
     showToast('Error memuat data nilai: ' + e.message, 'error');
     console.error('Error loadNilai:', e);
@@ -84,6 +103,23 @@ function renderTabelNilai() {
     return;
   }
 
+  // Tampilkan warning banner jika terkunci
+  let warningBanner = '';
+  if (isLocked) {
+    const isAdminOrWali = currentUser && (currentUser.role === 'admin' || currentUser.role === 'walikelas');
+    warningBanner = `
+    <div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
+      <span style="font-size:1.5rem;">🔒</span>
+      <div style="flex:1;">
+        <strong style="color:#92400e;">Nilai Terkunci</strong>
+        <p style="margin:4px 0 0;font-size:0.85rem;color:#92400e;">
+          Nilai tidak dapat diedit sampai kunci dibuka. 
+          ${isAdminOrWali ? 'Klik tombol "Buka Kunci" di atas untuk mengedit.' : 'Hubungi admin atau wali kelas untuk membuka kunci.'}
+        </p>
+      </div>
+    </div>`;
+  }
+
   // Hitung jumlah & rangking
   const jumlahArr   = siswa.map((s, si) => hitungJumlahNilai(nilai[si], mapel.length));
   const rangkingArr = hitungRangking(siswa, nilai, mapel.length);
@@ -93,7 +129,7 @@ function renderTabelNilai() {
   const isWali      = currentUser?.role === 'walikelas';
   const mapelGuru   = nilaiData.mapelGuru || {};
   
-  // Jika nilai terkunci, tidak boleh edit
+  // Jika nilai terkunci, tidak boleh edit sama sekali
   const bolehEditMapel = (mi) => {
     if (isLocked) return false;
     if (isAdmin || isWali) return true;
@@ -103,7 +139,7 @@ function renderTabelNilai() {
   // Sakit/ijin/alpa hanya admin & wali, dan tidak terkunci
   const bolehEditKehadiran = !isLocked && (isAdmin || isWali);
 
-  let html = `<div style="overflow-x:auto;"><table>
+  let html = warningBanner + `<div style="overflow-x:auto;"><table>
     <thead><tr>
       <th>No</th><th>Nama Siswa</th>`;
   mapel.forEach(m => {
@@ -117,12 +153,16 @@ function renderTabelNilai() {
     mapel.forEach((m, mi) => {
       const val    = (nilai[si] && nilai[si][mi] !== undefined) ? nilai[si][mi] : '';
       const boleh  = bolehEditMapel(mi);
+      const lockedStyle = isLocked ? 'background:#fee2e2;' : '';
       const style  = boleh
-        ? 'width:65px;'
-        : 'width:65px;background:#f3f4f6;color:#9ca3af;cursor:not-allowed;';
+        ? `width:65px;${lockedStyle}`
+        : `width:65px;background:#f3f4f6;color:#9ca3af;cursor:not-allowed;`;
+      const titleText = isLocked 
+        ? 'Nilai terkunci - tidak dapat diedit'
+        : (boleh ? '' : 'Anda tidak memiliki akses untuk mapel ini');
       html += `<td><input type="number" min="0" max="100" value="${val}"
                ${boleh ? `onchange="updateNilai(${si},${mi},this.value)"` : 'disabled'}
-               style="${style}" title="${boleh ? '' : 'Anda tidak memiliki akses untuk mapel ini'}"/></td>`;
+               style="${style}" title="${titleText}"/></td>`;
     });
     // Jumlah & Rangking (read-only, dihitung otomatis)
     const jml = jumlahArr[si] !== '' ? jumlahArr[si] : '-';
@@ -132,14 +172,16 @@ function renderTabelNilai() {
     const sakit = (nilai[si] && nilai[si]['sakit']) ? nilai[si]['sakit'] : '';
     const ijin  = (nilai[si] && nilai[si]['ijin'])  ? nilai[si]['ijin']  : '';
     const alpa  = (nilai[si] && nilai[si]['alpa'])  ? nilai[si]['alpa']  : '';
-    const kdis  = bolehEditKehadiran ? '' : 'disabled style="background:#f3f4f6;color:#9ca3af;cursor:not-allowed;"';
-    html += `<td><input type="number" min="0" value="${sakit}" ${bolehEditKehadiran ? `onchange="updateKehadiran(${si},'sakit',this.value)"` : 'disabled'} style="width:50px;${bolehEditKehadiran?'':'background:#f3f4f6;color:#9ca3af;'}"/></td>`;
-    html += `<td><input type="number" min="0" value="${ijin}"  ${bolehEditKehadiran ? `onchange="updateKehadiran(${si},'ijin',this.value)"`  : 'disabled'} style="width:50px;${bolehEditKehadiran?'':'background:#f3f4f6;color:#9ca3af;'}"/></td>`;
-    html += `<td><input type="number" min="0" value="${alpa}"  ${bolehEditKehadiran ? `onchange="updateKehadiran(${si},'alpa',this.value)"`  : 'disabled'} style="width:50px;${bolehEditKehadiran?'':'background:#f3f4f6;color:#9ca3af;'}"/></td>`;
+    const lockedStyleKh = isLocked ? 'background:#fee2e2;color:#9ca3af;' : '';
+    const kehadiranStyle = bolehEditKehadiran ? lockedStyleKh : 'background:#f3f4f6;color:#9ca3af;';
+    html += `<td><input type="number" min="0" value="${sakit}" ${bolehEditKehadiran ? `onchange="updateKehadiran(${si},'sakit',this.value)"` : 'disabled'} style="width:50px;${kehadiranStyle}" title="${isLocked?'Terkunci':''}"/></td>`;
+    html += `<td><input type="number" min="0" value="${ijin}"  ${bolehEditKehadiran ? `onchange="updateKehadiran(${si},'ijin',this.value)"`  : 'disabled'} style="width:50px;${kehadiranStyle}" title="${isLocked?'Terkunci':''}"/></td>`;
+    html += `<td><input type="number" min="0" value="${alpa}"  ${bolehEditKehadiran ? `onchange="updateKehadiran(${si},'alpa',this.value)"`  : 'disabled'} style="width:50px;${kehadiranStyle}" title="${isLocked?'Terkunci':''}"/></td>`;
     // Pesan Wali Kelas — hanya admin & wali yang bisa edit
     const pesan = (s.pesan !== undefined) ? s.pesan : '';
+    const pesanStyle = bolehEditKehadiran ? lockedStyleKh : 'background:#f3f4f6;color:#9ca3af;';
     html += `<td><textarea rows="2" ${bolehEditKehadiran ? `onchange="updatePesan(${si},this.value)"` : 'disabled'}
-      style="width:170px;font-size:0.78rem;resize:vertical;${bolehEditKehadiran?'':'background:#f3f4f6;color:#9ca3af;'}">${pesan}</textarea></td>`;
+      style="width:170px;font-size:0.78rem;resize:vertical;${pesanStyle}" title="${isLocked?'Terkunci':''}">${pesan}</textarea></td>`;
     html += `</tr>`;
   });
   html += `</tbody></table></div>`;
@@ -212,13 +254,22 @@ function hapusMapel(mi) {
 async function saveNilai() {
   const rombelId = getActiveRombelId('nilai');
   if (!rombelId) { showToast('Pilih rombel terlebih dahulu!', 'error'); return; }
+  
+  // Cek apakah nilai terkunci
+  if (nilaiData.isLocked) {
+    showToast('⚠️ Nilai terkunci! Tidak dapat menyimpan perubahan. Buka kunci terlebih dahulu.', 'error');
+    return;
+  }
+  
   try {
-    // Simpan nilai
+    // Simpan nilai - PENTING: sertakan isLocked untuk mempertahankan status
     await API.post('saveNilai', {
       kelasId: rombelId,
       mapel: JSON.stringify(nilaiData.mapel),
-      nilai: JSON.stringify(nilaiData.nilai)
+      nilai: JSON.stringify(nilaiData.nilai),
+      isLocked: nilaiData.isLocked ? 'true' : 'false'
     });
+    
     // Simpan pesan wali kelas untuk setiap siswa (batch)
     const savePromises = nilaiData.siswa.map((s, si) =>
       API.post('saveSiswa', {
@@ -228,6 +279,7 @@ async function saveNilai() {
       })
     );
     await Promise.all(savePromises);
+    
     showToast('Data nilai & pesan wali disimpan!', 'success');
   } catch(e) {
     showToast('Error menyimpan: ' + e.message, 'error');
@@ -283,30 +335,58 @@ async function toggleKunciNilai() {
   
   const action = newLockStatus ? 'mengunci' : 'membuka kunci';
   const confirmMsg = newLockStatus 
-    ? 'Kunci nilai? Setelah dikunci, nilai tidak dapat diedit sampai dibuka kembali.'
-    : 'Buka kunci nilai? Nilai akan dapat diedit kembali.';
+    ? '🔒 Kunci nilai?\n\nSetelah dikunci, nilai tidak dapat diedit oleh siapapun sampai dibuka kembali.\n\nLanjutkan?' 
+    : '🔓 Buka kunci nilai?\n\nNilai akan dapat diedit kembali oleh guru mapel, wali kelas, dan admin.\n\nLanjutkan?';
   
   if (!confirm(confirmMsg)) return;
+  
+  // Disable tombol sementara
+  const btnKunci = document.getElementById('btnKunciNilai');
+  const originalText = btnKunci ? btnKunci.textContent : '';
+  if (btnKunci) {
+    btnKunci.disabled = true;
+    btnKunci.textContent = '⏳ Menyimpan...';
+  }
   
   try {
     // Update status kunci
     nilaiData.isLocked = newLockStatus;
     
-    // Simpan ke server
+    console.log('Toggling lock status:', {
+      kelasId: rombelId,
+      oldStatus: currentLockStatus,
+      newStatus: newLockStatus
+    });
+    
+    // Simpan ke server - PENTING: sertakan isLocked dalam request
     await API.post('saveNilai', {
       kelasId: rombelId,
       mapel: JSON.stringify(nilaiData.mapel),
       nilai: JSON.stringify(nilaiData.nilai),
-      isLocked: newLockStatus
+      isLocked: newLockStatus ? 'true' : 'false' // Kirim sebagai string untuk kompatibilitas
     });
     
-    showToast(`Nilai berhasil ${newLockStatus ? 'dikunci' : 'dibuka'}!`, 'success');
+    const successMsg = newLockStatus 
+      ? '🔒 Nilai berhasil dikunci! Tidak dapat diedit sampai dibuka kembali.'
+      : '🔓 Nilai berhasil dibuka! Sekarang dapat diedit kembali.';
+    
+    showToast(successMsg, 'success');
+    
+    console.log('Lock status saved successfully:', newLockStatus);
     
     // Update UI
     updateKunciNilaiUI();
     renderTabelNilai();
   } catch(e) {
-    nilaiData.isLocked = currentLockStatus; // Rollback
+    // Rollback jika error
+    nilaiData.isLocked = currentLockStatus;
     showToast(`Error ${action}: ` + e.message, 'error');
+    console.error('Error toggleKunciNilai:', e);
+  } finally {
+    // Re-enable tombol
+    if (btnKunci) {
+      btnKunci.disabled = false;
+      btnKunci.textContent = originalText;
+    }
   }
 }
