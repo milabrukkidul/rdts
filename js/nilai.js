@@ -16,10 +16,24 @@ async function loadNilai() {
     return;
   }
   try {
-    const data = await API.call('getNilai', { kelasId: rombelId });
+    // PENTING: JANGAN gunakan cache untuk getNilai
+    // karena status isLocked bisa berubah dan harus selalu fresh
+    const data = await API.call('getNilai', { kelasId: rombelId }, false); // ← useCache = false
     if (data.error) {
       showToast('Error: ' + data.error, 'error');
       return;
+    }
+    
+    // Parse isLocked - bisa datang sebagai boolean, string, atau undefined
+    let isLocked = false;
+    if (data.isLocked !== undefined && data.isLocked !== null) {
+      if (typeof data.isLocked === 'boolean') {
+        isLocked = data.isLocked;
+      } else if (typeof data.isLocked === 'string') {
+        isLocked = data.isLocked === 'true' || data.isLocked === '1';
+      } else {
+        isLocked = Boolean(data.isLocked);
+      }
     }
     
     // Pastikan nilaiData memiliki semua properti yang diperlukan
@@ -28,12 +42,15 @@ async function loadNilai() {
       siswa: data.siswa || [],
       nilai: data.nilai || [],
       mapelGuru: data.mapelGuru || {},
-      isLocked: data.isLocked !== undefined ? data.isLocked : false
+      isLocked: isLocked
     };
     
     console.log('Nilai data loaded:', {
       kelasId: rombelId,
       isLocked: nilaiData.isLocked,
+      isLockedType: typeof nilaiData.isLocked,
+      rawIsLocked: data.isLocked,
+      rawIsLockedType: typeof data.isLocked,
       mapelCount: nilaiData.mapel.length,
       siswaCount: nilaiData.siswa.length
     });
