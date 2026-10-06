@@ -351,10 +351,23 @@ function cetakRapor() {
   document.body.classList.add('print-rapor');
   document.body.classList.remove('print-leger');
   
+  // Set page style to portrait
+  const style = document.createElement('style');
+  style.id = 'rapor-print-style';
+  style.textContent = `
+    @page { size: A4 portrait; margin: 8mm 10mm; }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  `;
+  document.head.appendChild(style);
+  
   window.print();
   
-  // Remove class setelah print
+  // Remove class and style setelah print
   setTimeout(() => {
     document.body.classList.remove('print-rapor');
+    const styleEl = document.getElementById('rapor-print-style');
+    if (styleEl) styleEl.remove();
   }, 100);
 }

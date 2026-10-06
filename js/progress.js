@@ -15,65 +15,94 @@ async function loadProgressData() {
       return;
     }
     
-    // Ambil data nilai untuk setiap rombel (parallel)
-    const nilaiPromises = rombelList.map(r => 
-      API.call('getNilai', { kelasId: r.id }, true).catch(() => ({ mapel: [], nilai: [], siswa: [] }))
-    );
-    const nilaiResults = await Promise.all(nilaiPromises);
+    // OPTIMASI: Batasi jumlah rombel yang di-fetch (chunking untuk performa)
+    const BATCH_SIZE = 3; // Fetch 3 rombel sekaligus
+    progressData = [];
     
-    // Hitung progress untuk setiap rombel
-    progressData = rombelList.map((r, i) => {
-      const nilaiData = nilaiResults[i];
-      const mapel = nilaiData.mapel || [];
-      const nilai = nilaiData.nilai || [];
-      const siswa = nilaiData.siswa || [];
+    // Progress indicator
+    let processedCount = 0;
+    const totalRombel = rombelList.length;
+    
+    // Process in batches untuk menghindari overload
+    for (let i = 0; i < rombelList.length; i += BATCH_SIZE) {
+      const batch = rombelList.slice(i, i + BATCH_SIZE);
       
-      let totalCells = 0;
-      let filledCells = 0;
-      let totalSiswa = siswa.length;
-      let siswaComplete = 0;
+      // Update progress indicator
+      container.innerHTML = `<p class="hint">Memuat data progress... (${Math.min(i + BATCH_SIZE, totalRombel)}/${totalRombel} rombel)</p>`;
       
-      if (mapel.length && nilai.length) {
-        totalCells = nilai.length * mapel.length;
+      // Fetch batch parallel dengan timeout protection
+      const batchPromises = batch.map(r => 
+        Promise.race([
+          API.call('getNilai', { kelasId: r.id }, true),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
+        ]).catch(err => {
+          console.warn(`Error loading nilai for ${r.id}:`, err);
+          return { mapel: [], nilai: [], siswa: [] };
+        })
+      );
+      
+      const batchResults = await Promise.all(batchPromises);
+      
+      // Process results
+      batch.forEach((r, batchIdx) => {
+        const nilaiData = batchResults[batchIdx];
+        const mapel = nilaiData.mapel || [];
+        const nilai = nilaiData.nilai || [];
+        const siswa = nilaiData.siswa || [];
         
-        nilai.forEach((nilaiRow, si) => {
-          let siswaFilled = 0;
-          mapel.forEach((m, mi) => {
-            if (nilaiRow && nilaiRow[mi] !== undefined && nilaiRow[mi] !== '') {
-              filledCells++;
-              siswaFilled++;
+        let totalCells = 0;
+        let filledCells = 0;
+        let totalSiswa = siswa.length;
+        let siswaComplete = 0;
+        
+        if (mapel.length && siswa.length) {
+          totalCells = siswa.length * mapel.length;
+          
+          nilai.forEach((nilaiRow, si) => {
+            let siswaFilled = 0;
+            mapel.forEach((m, mi) => {
+              if (nilaiRow && nilaiRow[mi] !== undefined && nilaiRow[mi] !== '') {
+                filledCells++;
+                siswaFilled++;
+              }
+            });
+            // Siswa dianggap complete jika semua mapel terisi
+            if (siswaFilled === mapel.length) {
+              siswaComplete++;
             }
           });
-          // Siswa dianggap complete jika semua mapel terisi
-          if (siswaFilled === mapel.length) {
-            siswaComplete++;
-          }
+        }
+        
+        const percentage = totalCells > 0 ? Math.round((filledCells / totalCells) * 100) : 0;
+        const siswaPercentage = totalSiswa > 0 ? Math.round((siswaComplete / totalSiswa) * 100) : 0;
+        
+        progressData.push({
+          id: r.id,
+          nama: r.nama || r.id,
+          wali: r.waliNama || r.wali || '-',
+          totalSiswa,
+          siswaComplete,
+          siswaPercentage,
+          totalMapel: mapel.length,
+          totalCells,
+          filledCells,
+          percentage,
+          status: percentage === 100 ? 'complete' : percentage >= 90 ? 'complete' : percentage >= 50 ? 'medium' : 'low'
         });
+      });
+      
+      // Small delay between batches untuk mencegah overload
+      if (i + BATCH_SIZE < rombelList.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
-      
-      const percentage = totalCells > 0 ? Math.round((filledCells / totalCells) * 100) : 0;
-      const siswaPercentage = totalSiswa > 0 ? Math.round((siswaComplete / totalSiswa) * 100) : 0;
-      
-      return {
-        id: r.id,
-        nama: r.nama || r.id,
-        wali: r.waliNama || r.wali || '-',
-        totalSiswa,
-        siswaComplete,
-        siswaPercentage,
-        totalMapel: mapel.length,
-        totalCells,
-        filledCells,
-        percentage,
-        status: percentage === 100 ? 'complete' : percentage >= 90 ? 'complete' : percentage >= 50 ? 'medium' : 'low'
-      };
-    });
+    }
     
     renderProgress();
     showToast('Data progress dimuat!', 'success');
   } catch(e) {
     container.innerHTML = '<p class="hint" style="color:#dc2626;">Error memuat data progress.</p>';
     showToast('Error: ' + e.message, 'error');
+    console.error('Error loadProgressData:', e);
   }
 }
 
@@ -170,7 +199,12 @@ function renderProgress() {
         
         <!-- Detail per Mapel (hidden by default) -->
         <div id="detailMapel${idx}" class="progress-detail-mapel" style="display:none;">
-          <div class="progress-detail-title">📚 Progress per Mata Pelajaran</div>
+          <div class="progress-detail-header">
+            <div class="progress-detail-title">📚 Progress per Mata Pelajaran</div>
+            <button class="btn-export-detail" onclick="exportDetailMapelJPG(${idx})" title="Export detail mapel ke JPG">
+              📸 Export JPG
+            </button>
+          </div>
           <div class="progress-mapel-grid" id="mapelGrid${idx}">
             <p class="hint">Memuat...</p>
           </div>
@@ -343,5 +377,155 @@ async function loadDetailMapel(idx) {
   } catch(e) {
     gridDiv.innerHTML = '<p class="hint" style="color:#dc2626;">Error memuat detail.</p>';
     console.error('Error loadDetailMapel:', e);
+  }
+}
+
+
+// Export Detail Mapel per Kelas sebagai JPG
+async function exportDetailMapelJPG(idx) {
+  const p = progressData[idx];
+  const detailDiv = document.getElementById(`detailMapel${idx}`);
+  
+  if (!detailDiv || detailDiv.style.display === 'none') {
+    showToast('Buka detail mapel terlebih dahulu!', 'error');
+    return;
+  }
+  
+  const mapelGrid = document.getElementById(`mapelGrid${idx}`);
+  if (!mapelGrid || !mapelGrid.children.length) {
+    showToast('Belum ada data mapel untuk di-export!', 'error');
+    return;
+  }
+  
+  // Check if html2canvas is available
+  if (typeof html2canvas === 'undefined') {
+    showToast('Loading html2canvas library...', 'info');
+    
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    script.onload = () => {
+      performDetailMapelJPGExport(idx, p.nama);
+    };
+    script.onerror = () => {
+      showToast('Error loading html2canvas library!', 'error');
+    };
+    document.head.appendChild(script);
+  } else {
+    performDetailMapelJPGExport(idx, p.nama);
+  }
+}
+
+async function performDetailMapelJPGExport(idx, namaKelas) {
+  const detailDiv = document.getElementById(`detailMapel${idx}`);
+  
+  showToast(`Generating JPG untuk ${namaKelas}...`, 'info');
+  
+  try {
+    // Buat container temporary untuk export dengan header yang lebih bagus
+    const exportContainer = document.createElement('div');
+    exportContainer.style.cssText = `
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      background: #fff;
+      padding: 30px;
+      width: 1200px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    `;
+    
+    // Header untuk export
+    const header = document.createElement('div');
+    header.style.cssText = `
+      margin-bottom: 24px;
+      border-bottom: 3px solid #2563eb;
+      padding-bottom: 16px;
+    `;
+    header.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <div style="font-size:2rem;">📚</div>
+        <div>
+          <h1 style="margin:0;font-size:1.8rem;color:#1e3a5f;">Progress Nilai per Mata Pelajaran</h1>
+          <p style="margin:4px 0 0;font-size:1rem;color:#6b7280;">${namaKelas}</p>
+        </div>
+      </div>
+      <div style="display:flex;gap:20px;font-size:0.9rem;color:#4b5563;">
+        <span>📅 ${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+        <span>🏫 MI Labkid</span>
+      </div>
+    `;
+    
+    // Clone detail content
+    const contentClone = detailDiv.cloneNode(true);
+    contentClone.style.display = 'block';
+    contentClone.style.marginTop = '0';
+    contentClone.style.paddingTop = '0';
+    contentClone.style.borderTop = 'none';
+    
+    // Sembunyikan tombol export di clone
+    const btnExport = contentClone.querySelector('.btn-export-detail');
+    if (btnExport) btnExport.style.display = 'none';
+    
+    // Modifikasi title
+    const detailTitle = contentClone.querySelector('.progress-detail-title');
+    if (detailTitle) {
+      detailTitle.style.fontSize = '1.3rem';
+      detailTitle.style.marginBottom = '20px';
+    }
+    
+    // Append ke container
+    exportContainer.appendChild(header);
+    exportContainer.appendChild(contentClone);
+    
+    // Tambahkan footer
+    const footer = document.createElement('div');
+    footer.style.cssText = `
+      margin-top: 30px;
+      padding-top: 16px;
+      border-top: 2px solid #e5e7eb;
+      text-align: center;
+      font-size: 0.85rem;
+      color: #9ca3af;
+    `;
+    footer.innerHTML = `
+      <p style="margin:0;">Rapor Digital Tengah Semester (RDTS) - MI Labkid</p>
+      <p style="margin:4px 0 0;">Generated by RDTS System</p>
+    `;
+    exportContainer.appendChild(footer);
+    
+    // Append to body
+    document.body.appendChild(exportContainer);
+    
+    // Generate canvas
+    const canvas = await html2canvas(exportContainer, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      logging: false,
+      useCORS: true,
+      width: 1200,
+      windowWidth: 1200
+    });
+    
+    // Remove temporary container
+    document.body.removeChild(exportContainer);
+    
+    // Convert to JPG
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      // Sanitize filename
+      const safeKelasName = namaKelas.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const timestamp = new Date().toISOString().split('T')[0];
+      a.download = `progress_detail_${safeKelasName}_${timestamp}.jpg`;
+      
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`Progress ${namaKelas} berhasil di-export!`, 'success');
+    }, 'image/jpeg', 0.95);
+    
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+    console.error('Export Detail JPG error:', e);
   }
 }

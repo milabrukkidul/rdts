@@ -243,11 +243,24 @@ function cetakLeger() {
   document.body.classList.add('print-leger');
   document.body.classList.remove('print-rapor');
   
+  // Set page style to landscape
+  const style = document.createElement('style');
+  style.id = 'leger-print-style';
+  style.textContent = `
+    @page { size: A4 landscape; margin: 5mm 4mm; }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  `;
+  document.head.appendChild(style);
+  
   window.print();
   
-  // Remove class setelah print
+  // Remove class and style setelah print
   setTimeout(() => {
     document.body.classList.remove('print-leger');
+    const styleEl = document.getElementById('leger-print-style');
+    if (styleEl) styleEl.remove();
   }, 100);
 }
 

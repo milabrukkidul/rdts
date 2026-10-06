@@ -1432,14 +1432,47 @@ td textarea { min-width: 140px; resize: vertical; }
   border-top: 2px dashed #e5e7eb;
 }
 
+.progress-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .progress-detail-title {
   font-size: 1rem;
   font-weight: 700;
   color: #1e3a5f;
-  margin-bottom: 16px;
   display: flex;
   align-items: center;
   gap: 8px;
+  margin: 0;
+}
+
+.btn-export-detail {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
+}
+
+.btn-export-detail:hover {
+  background: linear-gradient(135deg, #6d28d9, #8b5cf6);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+}
+
+.btn-export-detail:active {
+  transform: translateY(0);
 }
 
 .progress-mapel-grid {
@@ -1552,10 +1585,24 @@ td textarea { min-width: 140px; resize: vertical; }
     padding: 6px 12px;
     font-size: 0.8rem;
   }
+  
+  .progress-detail-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .btn-export-detail {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 @media print {
   .btn-detail {
+    display: none;
+  }
+  
+  .btn-export-detail {
     display: none;
   }
   
