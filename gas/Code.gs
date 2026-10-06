@@ -191,6 +191,7 @@ function handleAction_(body) {
       case 'deleteSiswa':   return R(requireRombel(body.token, body.kelasId, () => deleteSiswa_(body)));
       case 'importSiswa':   return R(requireRombel(body.token, body.kelasId, () => importSiswa_(body)));
       case 'saveNilai':     return R(requireNilai(body.token, body.kelasId, () => saveNilai_(body)));
+      case 'saveLock':      return R(requireRombel(body.token, body.kelasId, () => saveLock_(body)));
       case 'saveEkskul':    return R(requireRombel(body.token, body.kelasId, () => saveEkskul_(body)));
       
       // ── KKM write (admin & wali kelas bisa edit) ──
@@ -516,7 +517,7 @@ function deleteRombel_(body) {
     }
   }
   // Hapus semua sheet terkait rombel
-  ['_SETTING','_SISWA','_NILAI','_KKM','_EKSKUL'].forEach(suffix => {
+  ['_SETTING','_SISWA','_NILAI','_KKM','_EKSKUL','_LOCK'].forEach(suffix => {
     const s = SS.getSheetByName(rombelId + suffix);
     if (s) SS.deleteSheet(s);
   });
@@ -574,19 +575,23 @@ function importSiswa_(body) {
 
 // ============================================================
 // NILAI (per rombel)
+// Sheet header: NAMA | [mapel...] | sakit | ijin | alpa
+// Baris ke-1 (kolom A) khusus: "LOCK_STATUS" untuk simpan isLocked
 // ============================================================
 function getNilai_(rombelId) {
   const sh       = getSheet(shName(rombelId, 'NILAI'));
   const data     = sh.getDataRange().getValues();
   const siswaRes = getSiswa_(rombelId).siswa;
-  
+
+  // Baca isLocked dari sheet _LOCK
+  const isLocked = getLockStatus_(rombelId);
+
   // Jika sheet nilai kosong, ambil mapel dari rombel
   if (data.length < 2) {
     const { rombel } = getRombel_();
     const rombelInfo = rombel.find(r => r.id === rombelId);
     const mapelFromRombel = rombelInfo ? rombelInfo.mapel : [];
     
-    // Jika ada mapel dari rombel, inisialisasi sheet nilai
     if (mapelFromRombel.length > 0) {
       const header = ['NAMA', ...mapelFromRombel, 'sakit', 'ijin', 'alpa'];
       const rows = [header];
@@ -599,20 +604,15 @@ function getNilai_(rombelId) {
       if (rows.length > 1) {
         sh.getRange(1, 1, rows.length, header.length).setValues(rows);
       }
-      
-      // Return data dengan mapel dari rombel
       const nilai = siswaRes.map(() => {
         const obj = {};
         mapelFromRombel.forEach((m, mi) => obj[mi] = '');
-        obj['sakit'] = 0;
-        obj['ijin'] = 0;
-        obj['alpa'] = 0;
+        obj['sakit'] = 0; obj['ijin'] = 0; obj['alpa'] = 0;
         return obj;
       });
-      return { mapel: mapelFromRombel, siswa: siswaRes, nilai };
+      return { mapel: mapelFromRombel, siswa: siswaRes, nilai, isLocked };
     }
-    
-    return { mapel: [], siswa: siswaRes, nilai: [] };
+    return { mapel: [], siswa: siswaRes, nilai: [], isLocked };
   }
 
   const header = data[0];
@@ -636,7 +636,24 @@ function getNilai_(rombelId) {
   const rombelInfo = rombel.find(r => r.id === rombelId) || {};
   const mapelGuru  = rombelInfo.mapelGuru || {};
 
-  return { mapel, siswa: siswaRes, nilai, mapelGuru };
+  return { mapel, siswa: siswaRes, nilai, mapelGuru, isLocked };
+}
+
+// ===== LOCK HELPERS =====
+// Simpan isLocked di sheet tersendiri: <rombelId>_LOCK, baris 1 kolom A = "isLocked", kolom B = "true"/"false"
+function getLockStatus_(rombelId) {
+  try {
+    const sh = SS.getSheetByName(shName(rombelId, 'LOCK'));
+    if (!sh) return false;
+    const val = sh.getRange(1, 2).getValue();
+    return String(val) === 'true';
+  } catch(e) { return false; }
+}
+
+function setLockStatus_(rombelId, isLocked) {
+  const sh = getSheet(shName(rombelId, 'LOCK'));
+  sh.getRange(1, 1).setValue('isLocked');
+  sh.getRange(1, 2).setValue(isLocked ? 'true' : 'false');
 }
 
 function saveNilai_(body) {
@@ -645,6 +662,22 @@ function saveNilai_(body) {
   const nilaiNew = JSON.parse(body.nilai);
   const siswa    = getSiswa_(kelasId).siswa;
   const sh       = getSheet(shName(kelasId, 'NILAI'));
+
+  // Simpan isLocked jika dikirim
+  if (body.isLocked !== undefined) {
+    const lockVal = body.isLocked === true || body.isLocked === 'true';
+    setLockStatus_(kelasId, lockVal);
+  }
+
+  // Jika nilai terkunci, TOLAK perubahan nilai (hanya perubahan isLocked yang diizinkan)
+  const currentLocked = getLockStatus_(kelasId);
+  if (currentLocked && body.isLocked === undefined) {
+    return { success: false, error: 'Nilai terkunci. Buka kunci terlebih dahulu.' };
+  }
+  // Jika isLocked dikirim tapi tidak ada perubahan nilai (hanya toggle lock), izinkan
+  if (body.isLocked !== undefined && body.onlyLock === 'true') {
+    return { success: true };
+  }
 
   // Ambil nilai yang sudah ada (untuk merge — jaga nilai mapel lain)
   const existing   = getNilai_(kelasId);
@@ -669,19 +702,16 @@ function saveNilai_(body) {
     const row   = [s.nama];
 
     mapel.forEach((m, mi) => {
-      // Cek apakah user boleh edit mapel ini
-      const guruMapel   = mapelGuru[m] || '';
-      const bolehEdit   = !user || user.role === 'admin'
-                          || user.role === 'walikelas'
-                          || guruMapel === user.username;
-      // Jika boleh edit, pakai nilai baru; jika tidak, pertahankan nilai lama
+      const guruMapel = mapelGuru[m] || '';
+      const bolehEdit = !user || user.role === 'admin'
+                        || user.role === 'walikelas'
+                        || guruMapel === user.username;
       const val = bolehEdit
         ? (nNew[mi] !== undefined ? nNew[mi] : '')
         : (nLama[mi] !== undefined ? nLama[mi] : '');
       row.push(val);
     });
 
-    // Sakit/ijin/alpa: hanya wali kelas & admin yang boleh edit
     const bolehKehadiran = !user || user.role === 'admin' || user.role === 'walikelas';
     row.push(
       bolehKehadiran ? (nNew['sakit'] || 0) : (nLama['sakit'] || 0),
@@ -695,6 +725,16 @@ function saveNilai_(body) {
     sh.getRange(1, 1, rows.length, header.length).setValues(rows);
   }
   return { success: true };
+}
+
+// ============================================================
+// LOCK NILAI (per rombel) — action terpisah agar ringan
+// ============================================================
+function saveLock_(body) {
+  const { kelasId } = body;
+  const lockVal = body.isLocked === true || body.isLocked === 'true';
+  setLockStatus_(kelasId, lockVal);
+  return { success: true, isLocked: lockVal };
 }
 
 // ============================================================
