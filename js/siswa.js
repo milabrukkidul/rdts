@@ -1,69 +1,77 @@
 // ===== DATA SISWA (per rombel) =====
 
 let siswaCacheList = [];
-let siswaDataCache = {}; // Cache untuk data siswa per rombel
+let siswaDataCache = {}; // { [rombelId]: { siswa: [], timestamp: number } }
 
-// Local storage cache key
-const SISWA_CACHE_KEY = 'rdts_siswa_cache';
-const SISWA_CACHE_EXPIRY = 30 * 60 * 1000; // 30 menit
+const SISWA_CACHE_KEY    = 'rdts_siswa_cache';
+const SISWA_CACHE_EXPIRY = 30 * 60 * 1000; // 30 menit per rombel
 
-// Load cache from localStorage
-function loadSiswaCache() {
+// Dipanggil SEKALI saat login / app init — muat semua cache dari localStorage ke memori
+function initSiswaCache() {
   try {
-    const cached = localStorage.getItem(SISWA_CACHE_KEY);
-    if (cached) {
-      const data = JSON.parse(cached);
-      // Cek expiry
-      if (data.timestamp && (Date.now() - data.timestamp < SISWA_CACHE_EXPIRY)) {
-        siswaDataCache = data.cache || {};
-        console.log('Siswa cache loaded from localStorage:', Object.keys(siswaDataCache).length, 'rombel');
-        return true;
-      } else {
-        // Cache expired, hapus
-        localStorage.removeItem(SISWA_CACHE_KEY);
+    const raw = localStorage.getItem(SISWA_CACHE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    const now   = Date.now();
+    // Muat hanya entry yang belum expired, buang yang sudah kadaluarsa
+    siswaDataCache = {};
+    Object.entries(saved).forEach(([rombelId, entry]) => {
+      if (entry && entry.timestamp && (now - entry.timestamp < SISWA_CACHE_EXPIRY)) {
+        siswaDataCache[rombelId] = entry;
       }
-    }
+    });
   } catch(e) {
-    console.warn('Error loading siswa cache:', e);
+    siswaDataCache = {};
   }
-  return false;
 }
 
-// Save cache to localStorage
-function saveSiswaCache() {
+// Simpan satu entry rombel ke localStorage (tidak timpa entri lain)
+function persistSiswaCache(rombelId) {
   try {
-    const data = {
-      timestamp: Date.now(),
-      cache: siswaDataCache
-    };
-    localStorage.setItem(SISWA_CACHE_KEY, JSON.stringify(data));
-    console.log('Siswa cache saved to localStorage');
+    // Baca dulu yang sudah ada agar tidak timpa rombel lain
+    let saved = {};
+    try {
+      const raw = localStorage.getItem(SISWA_CACHE_KEY);
+      if (raw) saved = JSON.parse(raw);
+    } catch(e) {}
+
+    // Tulis/update hanya entry rombel yang baru saja berubah
+    if (siswaDataCache[rombelId]) {
+      saved[rombelId] = siswaDataCache[rombelId];
+    } else {
+      delete saved[rombelId];
+    }
+
+    localStorage.setItem(SISWA_CACHE_KEY, JSON.stringify(saved));
   } catch(e) {
-    console.warn('Error saving siswa cache:', e);
+    console.warn('persistSiswaCache error:', e);
   }
 }
 
-// Clear cache
+// Hapus satu entry rombel dari cache memori dan localStorage
+function invalidateSiswaCache(rombelId) {
+  delete siswaDataCache[rombelId];
+  persistSiswaCache(rombelId); // akan delete entry tsb dari localStorage
+}
+
+// Hapus seluruh cache (misal saat logout)
 function clearSiswaCache() {
   siswaDataCache = {};
   localStorage.removeItem(SISWA_CACHE_KEY);
   showToast('Cache siswa dibersihkan!', 'info');
 }
 
+// ===== LOAD SISWA =====
+
 async function loadSiswa() {
   const rombelId = getActiveRombelId('siswa');
-  
-  // Tampilkan/sembunyikan peringatan untuk admin
+
   const warning = document.getElementById('siswaRombelWarning');
-  if (warning) {
-    warning.style.display = !rombelId ? 'block' : 'none';
-  }
-  
-  // Sembunyikan tombol untuk wali kelas
+  if (warning) warning.style.display = !rombelId ? 'block' : 'none';
+
   updateSiswaButtonsVisibility();
-  
+
   if (!rombelId) {
-    // Jika admin belum pilih rombel, tampilkan pesan tanpa error
     if (currentUser && currentUser.role === 'admin') {
       renderTabelSiswa([]);
       return;
@@ -71,36 +79,27 @@ async function loadSiswa() {
     showToast('Pilih rombel terlebih dahulu!', 'error');
     return;
   }
-  
-  // Load cache dari localStorage
-  loadSiswaCache();
-  
-  // Cek apakah data sudah ada di cache
-  if (siswaDataCache[rombelId]) {
-    const cached = siswaDataCache[rombelId];
-    siswaCacheList = cached.siswa || [];
+
+  // Cek cache untuk rombelId ini saja — jangan panggil loadSiswaCache() lagi di sini
+  const cached = siswaDataCache[rombelId];
+  if (cached && cached.siswa && (Date.now() - cached.timestamp < SISWA_CACHE_EXPIRY)) {
+    siswaCacheList = cached.siswa;
     renderTabelSiswa(siswaCacheList);
     showToast('Data siswa dimuat dari cache! 💾', 'success');
-    console.log('Loaded from cache:', rombelId, siswaCacheList.length, 'siswa');
     return;
   }
-  
-  // Jika tidak ada cache, fetch dari server
+
+  // Fetch dari server
   try {
     const data = await API.call('getSiswa', { kelasId: rombelId });
-    if (data.error) {
-      showToast('Error: ' + data.error, 'error');
-      return;
-    }
+    if (data.error) { showToast('Error: ' + data.error, 'error'); return; }
+
     siswaCacheList = data.siswa || [];
-    
-    // Simpan ke cache
-    siswaDataCache[rombelId] = {
-      siswa: siswaCacheList,
-      timestamp: Date.now()
-    };
-    saveSiswaCache();
-    
+
+    // Simpan hanya untuk rombelId ini
+    siswaDataCache[rombelId] = { siswa: siswaCacheList, timestamp: Date.now() };
+    persistSiswaCache(rombelId);
+
     renderTabelSiswa(siswaCacheList);
     showToast('Data siswa dimuat! 🌐', 'success');
   } catch(e) {
@@ -109,24 +108,21 @@ async function loadSiswa() {
   }
 }
 
-// Update visibility tombol berdasarkan role
+// ===== TAMPILAN =====
+
 function updateSiswaButtonsVisibility() {
   const isAdmin = currentUser && currentUser.role === 'admin';
-  
-  // Sembunyikan tombol Tambah Siswa, Upload Excel, dan Template untuk wali kelas
-  const btnTambahSiswa = document.querySelector('#page-siswa .page-header .btn-success');
-  const btnUploadExcel = document.querySelector('#page-siswa .page-header .btn-warning');
+  const btnTambah  = document.querySelector('#page-siswa .page-header .btn-success');
+  const btnUpload  = document.querySelector('#page-siswa .page-header .btn-warning');
   const btnTemplate = document.getElementById('btnTemplateSiswa');
-  
-  if (btnTambahSiswa) btnTambahSiswa.style.display = isAdmin ? '' : 'none';
-  if (btnUploadExcel) btnUploadExcel.style.display = isAdmin ? '' : 'none';
+  if (btnTambah)   btnTambah.style.display   = isAdmin ? '' : 'none';
+  if (btnUpload)   btnUpload.style.display   = isAdmin ? '' : 'none';
   if (btnTemplate) btnTemplate.style.display = isAdmin ? '' : 'none';
 }
 
 function renderTabelSiswa(list) {
-  const tbody = document.getElementById('bodySiswa');
+  const tbody   = document.getElementById('bodySiswa');
   const isAdmin = currentUser && currentUser.role === 'admin';
-  
   tbody.innerHTML = '';
   if (!list.length) {
     tbody.innerHTML = '<tr><td colspan="9" class="hint">Belum ada data siswa.</td></tr>';
@@ -134,12 +130,10 @@ function renderTabelSiswa(list) {
   }
   list.forEach((s, i) => {
     const tr = document.createElement('tr');
-    // Tombol edit dan hapus hanya untuk admin
     const aksiButtons = isAdmin ? `
       <button class="btn-warning" onclick="editSiswa(${i})" style="padding:3px 8px;font-size:0.78rem;">✏️</button>
       <button class="btn-danger"  onclick="hapusSiswa(${i})" style="padding:3px 8px;font-size:0.78rem;margin-left:4px;">🗑️</button>
     ` : '-';
-    
     tr.innerHTML = `
       <td>${i+1}</td>
       <td>${s.nisn||''}</td>
@@ -154,11 +148,11 @@ function renderTabelSiswa(list) {
   });
 }
 
+// ===== CRUD =====
+
 function tambahSiswa() {
-  // Hanya admin yang boleh tambah siswa
   if (currentUser && currentUser.role !== 'admin') {
-    showToast('Hanya admin yang dapat menambah siswa!', 'error');
-    return;
+    showToast('Hanya admin yang dapat menambah siswa!', 'error'); return;
   }
   document.getElementById('modalSiswaTitle').textContent = 'Tambah Siswa';
   document.getElementById('ms_rowIndex').value = '-1';
@@ -168,67 +162,40 @@ function tambahSiswa() {
 }
 
 function editSiswa(idx) {
-  // Hanya admin yang boleh edit siswa
   if (currentUser && currentUser.role !== 'admin') {
-    showToast('Hanya admin yang dapat mengedit siswa!', 'error');
-    return;
+    showToast('Hanya admin yang dapat mengedit siswa!', 'error'); return;
   }
   const s = siswaCacheList[idx];
-  console.log('Edit Siswa - Data asli:', s);
-  
   document.getElementById('modalSiswaTitle').textContent = 'Edit Siswa';
-  document.getElementById('ms_rowIndex').value   = idx;
-  document.getElementById('ms_nisn').value       = s.nisn||'';
-  document.getElementById('ms_noInduk').value    = s.noInduk||'';
-  document.getElementById('ms_nama').value       = s.nama||'';
-  document.getElementById('ms_panggilan').value  = s.panggilan||'';
-  document.getElementById('ms_tempatLahir').value= s.tempatLahir||'';
-  
-  // Format tanggal untuk input type="date" (harus YYYY-MM-DD)
-  let tglLahir = s.tglLahir || '';
-  console.log('Tanggal lahir asli:', tglLahir, 'Type:', typeof tglLahir);
-  
-  if (tglLahir) {
-    // Convert string to string (hapus spasi/tab)
-    tglLahir = String(tglLahir).trim();
-    
-    // Jika format DD/MM/YYYY atau D/M/YYYY, konversi ke YYYY-MM-DD
-    if (tglLahir.includes('/')) {
-      const parts = tglLahir.split('/');
-      if (parts.length === 3) {
-        const day = parts[0].padStart(2,'0');
-        const month = parts[1].padStart(2,'0');
-        const year = parts[2];
-        tglLahir = `${year}-${month}-${day}`;
-      }
-    } 
-    // Jika sudah format YYYY-MM-DD tapi ada jam
-    else if (tglLahir.includes(' ')) {
-      tglLahir = tglLahir.split(' ')[0];
-    }
-    // Jika format timestamp Excel (angka serial date)
-    else if (!isNaN(tglLahir) && Number(tglLahir) > 1000) {
-      // Convert Excel serial date to JS date
-      const excelEpoch = new Date(1899, 11, 30);
-      const jsDate = new Date(excelEpoch.getTime() + Number(tglLahir) * 86400000);
-      const year = jsDate.getFullYear();
-      const month = String(jsDate.getMonth() + 1).padStart(2, '0');
-      const day = String(jsDate.getDate()).padStart(2, '0');
-      tglLahir = `${year}-${month}-${day}`;
+  document.getElementById('ms_rowIndex').value    = idx;
+  document.getElementById('ms_nisn').value        = s.nisn||'';
+  document.getElementById('ms_noInduk').value     = s.noInduk||'';
+  document.getElementById('ms_nama').value        = s.nama||'';
+  document.getElementById('ms_panggilan').value   = s.panggilan||'';
+  document.getElementById('ms_tempatLahir').value = s.tempatLahir||'';
+
+  // Format tanggal → YYYY-MM-DD untuk input type="date"
+  let tgl = String(s.tglLahir || '').trim();
+  if (tgl) {
+    if (tgl.includes('/')) {
+      const [d, m, y] = tgl.split('/');
+      tgl = `${y}-${(m||'').padStart(2,'0')}-${(d||'').padStart(2,'0')}`;
+    } else if (tgl.includes(' ')) {
+      tgl = tgl.split(' ')[0];
+    } else if (!isNaN(tgl) && Number(tgl) > 1000) {
+      const jsDate = new Date(new Date(1899,11,30).getTime() + Number(tgl) * 86400000);
+      tgl = `${jsDate.getFullYear()}-${String(jsDate.getMonth()+1).padStart(2,'0')}-${String(jsDate.getDate()).padStart(2,'0')}`;
     }
   }
-  
-  console.log('Tanggal lahir setelah konversi:', tglLahir);
-  document.getElementById('ms_tglLahir').value   = tglLahir;
-  
-  document.getElementById('ms_namaOrtu').value   = s.namaOrtu||'';
+  document.getElementById('ms_tglLahir').value  = tgl;
+  document.getElementById('ms_namaOrtu').value  = s.namaOrtu||'';
   document.getElementById('modalSiswa').classList.remove('hidden');
 }
 
 async function simpanSiswa() {
   const rombelId = getActiveRombelId('siswa');
   if (!rombelId) { showToast('Pilih rombel terlebih dahulu!', 'error'); return; }
-  const idx = parseInt(document.getElementById('ms_rowIndex').value);
+  const idx   = parseInt(document.getElementById('ms_rowIndex').value);
   const siswa = {
     nisn:        document.getElementById('ms_nisn').value.trim(),
     noInduk:     document.getElementById('ms_noInduk').value.trim(),
@@ -242,32 +209,22 @@ async function simpanSiswa() {
   try {
     await API.post('saveSiswa', { kelasId: rombelId, siswa: JSON.stringify(siswa), rowIndex: idx });
     closeModal('modalSiswa');
-    
-    // Hapus cache untuk rombel ini karena data berubah
-    delete siswaDataCache[rombelId];
-    saveSiswaCache();
-    
+    invalidateSiswaCache(rombelId); // hapus cache rombel ini saja
     showToast('Data siswa disimpan!', 'success');
     await loadSiswa();
   } catch(e) {}
 }
 
 async function hapusSiswa(idx) {
-  // Hanya admin yang boleh hapus siswa
   if (currentUser && currentUser.role !== 'admin') {
-    showToast('Hanya admin yang dapat menghapus siswa!', 'error');
-    return;
+    showToast('Hanya admin yang dapat menghapus siswa!', 'error'); return;
   }
   if (!confirm('Hapus data siswa ini?')) return;
   const rombelId = getActiveRombelId('siswa');
   if (!rombelId) return;
   try {
     await API.post('deleteSiswa', { kelasId: rombelId, rowIndex: idx });
-    
-    // Hapus cache untuk rombel ini karena data berubah
-    delete siswaDataCache[rombelId];
-    saveSiswaCache();
-    
+    invalidateSiswaCache(rombelId); // hapus cache rombel ini saja
     showToast('Data siswa dihapus!', 'success');
     await loadSiswa();
   } catch(e) {}

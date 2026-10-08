@@ -44,6 +44,8 @@ async function doLogin() {
 function doLogout() {
   currentUser = null;
   sessionStorage.removeItem('currentUser');
+  // Bersihkan cache siswa saat logout agar tidak bocor ke user berikutnya
+  if (typeof clearSiswaCache === 'function') clearSiswaCache();
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('mainApp').classList.add('hidden');
   document.getElementById('loginUser').value = '';
@@ -54,6 +56,9 @@ function doLogout() {
 function showMainApp() {
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
+
+  // Inisialisasi cache siswa SEKALI saat app dimuat — sebelum halaman apapun dibuka
+  if (typeof initSiswaCache === 'function') initSiswaCache();
   buildNavbar();
   if (currentUser.role === 'admin') {
     showPage('dashboard');
